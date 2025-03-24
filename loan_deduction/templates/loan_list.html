@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Loan List</title>
+    {% include 'header.html' %}
+  </head>
+  <body >
+    <h1>Loan List</h1>
+    <table border="1" class="table">
+        <thead class="thead-dark">
+      <tr >
+        <th>Loan Type</th>
+        <th>Amount</th>
+        <th>Requested Date</th>
+        <th>Approved Date</th>
+        <th>Reason</th>
+        <th>Repayment Period</th>
+        <th>Monthly Emi</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+      {% for loan in loans %}
+      <tr>
+        <td>{{ loan.loan_type }}</td>
+        <td>{{ loan.loan_amount }}</td>
+        <td>{{ loan.requested_date }}</td>
+        <td>{{ loan.approved_date }}</td>
+        <td>{{ loan.reasons }}</td>
+        <td>{{ loan.repayment_period }}</td>
+        <td>{{ loan.monthly_emi }}</td>
+        <td>{{ loan.status }}</td>
+        <td></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>
