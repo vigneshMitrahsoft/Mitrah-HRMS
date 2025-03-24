@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Employee</title>
+	{% include 'header.html' %}
+</head>
+<body style ="margin-top:90px">
+	{% include 'navbar.html' %}
+	<div class="container">
+		<form action="addemployee" method="post">
+			<div class="row">
+				<div class="col-6">
+					<div class="form-group">
+						<label for="fname">First Name:</label>
+						<input type="text" class="form-control" placeholder="Enter First Name" id="fname" name="fname">
+					</div>
+				</div>
+				<div class="col-6">
+					<div class="form-group" >
+						<label for="lname">Last Name:</label>
+						<input type="text" class="form-control" placeholder="Enter Last Name" id="lname" name="lname">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-6">
+					<div class="form-group">
+						<label for="email">email:</label>
+						<input type="email" class="form-control" placeholder="Enter email" id="email" name="email">
+					</div>
+				</div>
+				<div class="col-6">
+					<div class="form-group">
+						<label for="pwd">Password:</label>
+						<input type="password" class="form-control" placeholder="Enter password" id="password" name="password">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-6">
+					<div class="form-group">
+						<label for="dob">Date of Birth:</label>
+						<input type="date" class="form-control" placeholder="Enter password" id="dob" name="dob">
+					</div>
+				</div>
+				<div class="col-6">
+					<div class="form-group">
+						<label for="sel1">Role:</label>
+						<select class="form-control" name="role">
+							{% for role in roles %}
+							<option value ="{{role.role_id}}">{{role.role_name}}</option>
+							{% endfor %}
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-6">
+					<div class="form-group" >
+						<label for="sel1">Type:</label>
+						<select class="form-control" id="sel1" name="type">
+							{% for type in types %}
+							<option value ="{{type.type_id}}">{{type.type_name}}</option>
+							{% endfor %}
+						</select>
+					</div>
+				</div>
+				<div class="col-6">
+					<div class="form-group" >
+						<label for="sel1">Company:</label>
+						<select class="form-control" id="sel1" name="company">
+							{% for company in companies %}
+							<option value ="{{company.company_id}}">{{company.company_name}}</option>
+							{% endfor %}
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="comment">Address:</label>
+				<textarea class="form-control" rows="5" id="address" name="address"></textarea>
+			</div>
+			<input type="hidden" id="hidden" name="id_field" value="{{employee.employee_id}}">
+			<button type="submit" class="btn btn-primary">Submit</button>
+		</form>
+	</div>
+</body>
+</html>

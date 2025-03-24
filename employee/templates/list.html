@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Employee_page</title>
+	{% include 'header.html' %}
+	</head>
+<body style="margin-top:90px">
+	{% include 'navbar.html' %}
+	<div class="container-fluid">	
+		<table class="table">
+			<tr>
+				<!-- <a href ="employee" class ="btn btn-success" style ="float:right">Add Employee</a> -->
+				<a href="employee" class="btn btn-success" style="float:right; margin-bottom: 20px;">Add Employee</a>
+		
+			</tr>
+			<thead class="thead-dark">
+				<tr>
+				<th scope="col">Employee_id</th>
+				<th scope="col">First_name</th>
+				<th scope="col">Last_name</th>
+				<th scope="col">Email</th>
+				<th scope="col">DOB</th>
+				<th scope="col">Address</th>
+				<th scope="col">Action</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for employee in employee_list %}
+				<tr>
+				<td>{{employee.employee_id}}</td>
+				<td>{{employee.first_name}}</td>
+				<td>{{employee.last_name}}</td>
+				<td>{{employee.email}}</td>
+				<td>{{employee.date_of_birth}}</td>
+				<td>{{employee.address}}</td>
+				<td class=><a href ="update/{{ employee.employee_id}}" class ="btn btn-info">Edit</a>
+					<a href ="delete/{{ employee.employee_id }}" class ="btn btn-danger">Delete</a></td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+	</body>
+</html>
