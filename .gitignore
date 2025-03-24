@@ -1,0 +1,10 @@
+#Environments
+.venv
+env
+
+# Django stuff
+# db.sqlite3
+
+
+#migreation file
+__pycache__
