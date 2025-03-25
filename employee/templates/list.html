@@ -11,9 +11,9 @@
 	<div class="container-fluid">	
 		<table class="table">
 			<tr>
-				<!-- <a href ="employee" class ="btn btn-success" style ="float:right">Add Employee</a> -->
-				<a href="employee" class="btn btn-success" style="float:right; margin-bottom: 20px;">Add Employee</a>
-		
+				<thead>
+					<a href="employee" class="btn btn-success" style="float:right; margin-bottom: 20px;"><i class="fas fa-plus"></i> Add Employee</a>
+				</thead>
 			</tr>
 			<thead class="thead-dark">
 				<tr>
@@ -35,12 +35,43 @@
 				<td>{{employee.email}}</td>
 				<td>{{employee.date_of_birth}}</td>
 				<td>{{employee.address}}</td>
-				<td class=><a href ="update/{{ employee.employee_id}}" class ="btn btn-info">Edit</a>
-					<a href ="delete/{{ employee.employee_id }}" class ="btn btn-danger">Delete</a></td>
+				<td class=><a href ="employee/{{employee.employee_id}}" class ="btn btn-info"><i class="fas fa-edit"></i></a>
+					<button type="button" class="btn btn-danger delete_btn" data-toggle="modal" data-target="#exampleModal"data-id="{{employee.employee_id}}">
+						<i class="fas fa-trash"></i>
+					</button>
 				</tr>
 				{% endfor %}
 			</tbody>
 		</table>
-	</div>
+		<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+			  <div class="modal-content">
+				<div class="modal-header">
+				  <h5 class="modal-title" id="exampleModalLabel">Delete Employee</h5>
+				  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				  </button>
+				</div>
+				<div class="modal-body">
+					Are you sure you want to delete the employee
+				</div>
+				<div class="modal-footer">
+				  <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+				  <a href ="#" class ="btn btn-danger" id="modal_del">Yes</a></td>
+				</div>
+			  </div>
+			</div>
+		  </div>
 	</body>
+	<script>
+		$('.delete_btn').click(function(){
+			var employee_id = $(this).data('id');
+			console.log("modal--->",employee_id)
+			var delete_url = '/delete/' + employee_id;
+			console.log("del-->",delete_url)
+			$('#modal_del').attr('href', delete_url);
+			$('.modal').show();
+		})
+	</script>
 </html>
+

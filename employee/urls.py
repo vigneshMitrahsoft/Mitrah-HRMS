@@ -4,6 +4,6 @@ urlpatterns = [
     path("employees",views.get),
     path("employee",views.insertEmployee),
     path('addemployee',views.addEmployee),
-    path("employee/<int:id>",views.put),
+    path("employee/<int:id>",views.employeeUpdate),
     path("delete/<int:id>",views.delete)
 ]

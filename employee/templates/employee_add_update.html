@@ -5,86 +5,166 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Employee</title>
 	{% include 'header.html' %}
+	<style>
+		.needs-validation .form-control:valid,
+    	.needs-validation .form-control:invalid {
+      	background-image: none !important;
+    }
+		.needs-validation .form-control:valid {
+			border-color: none !important
+	}
+	</style>
 </head>
 <body style ="margin-top:90px">
 	{% include 'navbar.html' %}
-	<div class="container">
-		<form action="addemployee" method="post">
-			<div class="row">
-				<div class="col-6">
-					<div class="form-group">
-						<label for="fname">First Name:</label>
-						<input type="text" class="form-control" placeholder="Enter First Name" id="fname" name="fname">
+	<div class="outer d-flex flex-column row gy-3">
+		<div class="pb-3">
+			<h1 class="text-center">{{header}} Employee</h1>
+		</div>
+		<div class="container pt-4">
+			<form class="needs-validation" novalidate action="/addemployee" method="post">
+				<input type="hidden" id="hidden" name="employee_id" value="{{employee.employee_id}}">
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="fname">First Name:</label>
+							<input type="text" class="form-control required alpha" placeholder="Enter First Name" id="fname" name="fname" pattern ="^[A-Za-z]+$"required value={{employee.first_name}} >
+							<div class="invalid-feedback">please provide correct format</div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group" >
+							<label for="lname">Last Name:</label>
+							<input type="text" class="form-control required alpha" placeholder="Enter Last Name" id="lname" name="lname" value="{{employee.last_name}}" required>
+							<div class="valid-feedback"></div>
+						</div>
 					</div>
 				</div>
-				<div class="col-6">
-					<div class="form-group" >
-						<label for="lname">Last Name:</label>
-						<input type="text" class="form-control" placeholder="Enter Last Name" id="lname" name="lname">
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="email">Email:</label>
+							<input type="email" class="form-control" placeholder="Enter email" id="email" name="email" value="{{employee.email}}" required>
+							<div class="valid-feedback"></div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="pwd">Password:</label>
+							<input type="password" class="form-control" placeholder="Enter password" id="password" name="password" value="{{employee.password}}" minlength="8" required>
+						</div>
 					</div>
 				</div>
-			</div>
-			<div class="row">
-				<div class="col-6">
-					<div class="form-group">
-						<label for="email">email:</label>
-						<input type="email" class="form-control" placeholder="Enter email" id="email" name="email">
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="dob">Date of Birth:</label>
+							<input type="date" class="form-control" id="dob" name="dob" value="{{employee.date_of_birth}}" required>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="sel1">Role:</label>
+							<select class="form-control" name="role" required>
+								{% for role in roles %}
+								{% if employee.role_id_id == role.role_id %}
+									<option value="{{role.role_id}}" selected>{{role.role_name}}</option>
+								{% endif %}
+								<option value ="{{role.role_id}}">{{role.role_name}}</option>
+								{% endfor %}
+							</select>
+						</div>
 					</div>
 				</div>
-				<div class="col-6">
-					<div class="form-group">
-						<label for="pwd">Password:</label>
-						<input type="password" class="form-control" placeholder="Enter password" id="password" name="password">
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group" >
+							<label for="sel1">Type:</label>
+							<select class="form-control" id="sel1" name="type">
+								{% for type in types %}
+								{% if employee.type_id_id == type.type_id %}
+									<option value="{{type.type_id}}" selected>{{type.type_name}}</option>
+								{% endif %}
+								<option value ="{{type.type_id}}">{{type.type_name}}</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="dob">Date of Joining:</label>
+							<input type="date" class="form-control"  id="dob" name="date_of_joining" value="{{employee.date_of_joining}}">
+						</div>
 					</div>
 				</div>
-			</div>
-			<div class="row">
-				<div class="col-6">
-					<div class="form-group">
-						<label for="dob">Date of Birth:</label>
-						<input type="date" class="form-control" placeholder="Enter password" id="dob" name="dob">
-					</div>
+				<div class="form-group">
+					<label for="comment">Address:</label>
+					<textarea class="form-control" rows="5" id="address" name="address" >{{employee.address}}</textarea>
 				</div>
-				<div class="col-6">
-					<div class="form-group">
-						<label for="sel1">Role:</label>
-						<select class="form-control" name="role">
-							{% for role in roles %}
-							<option value ="{{role.role_id}}">{{role.role_name}}</option>
-							{% endfor %}
-						</select>
-					</div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-6">
-					<div class="form-group" >
-						<label for="sel1">Type:</label>
-						<select class="form-control" id="sel1" name="type">
-							{% for type in types %}
-							<option value ="{{type.type_id}}">{{type.type_name}}</option>
-							{% endfor %}
-						</select>
-					</div>
-				</div>
-				<div class="col-6">
-					<div class="form-group" >
-						<label for="sel1">Company:</label>
-						<select class="form-control" id="sel1" name="company">
-							{% for company in companies %}
-							<option value ="{{company.company_id}}">{{company.company_name}}</option>
-							{% endfor %}
-						</select>
-					</div>
-				</div>
-			</div>
-			<div class="form-group">
-				<label for="comment">Address:</label>
-				<textarea class="form-control" rows="5" id="address" name="address"></textarea>
-			</div>
-			<input type="hidden" id="hidden" name="id_field" value="{{employee.employee_id}}">
-			<button type="submit" class="btn btn-primary">Submit</button>
-		</form>
+				<button type="submit" class="btn btn-primary">Submit</button>
+			</form>
+		</div>
 	</div>
 </body>
+<script>
+// (function() {
+//   'use strict';
+//   window.addEventListener('load', function() {
+// 	$('.valid-feedback').empty();
+//     var forms = document.getElementsByClassName('needs-validation');
+//     var validation = Array.prototype.filter.call(forms, function(form) {
+//       form.addEventListener('submit', function(event) {
+//         if (form.checkValidity() === false) {
+//           event.preventDefault();
+//           event.stopPropagation();
+//         }
+//         form.classList.add('was-validated');
+//       }, false);
+//     });
+//   }, false);
+// })();
+// function formValidate() {
+//     error = false;
+//     $('.required').each( function() {
+//         if($(this).val().length == 0) {
+//             // $(this).after('<div>Field is required.</div>');
+// 			$(this).siblings('div').text('Field is required')
+//             error = true;
+//         }
+//     })
+// 	return true;
+// }
+
+// $('.alpha').each( function() {
+// 	$(this).keyup(function(){
+// 		var val = $(this)
+// 		var val =$(this).val()
+// 		let string = /^[A-Za-z]+$/.test(val);
+// 		if (!string){
+// 			console.log("exec")
+// 			$(this).setCustomValidity("must be string")
+// 			// $(this).css('border-color','red')
+// 			// $(this).siblings('div').text('special_char not allowed')
+// 			// $(this).css('box-shadow','0 0 0 .2rem rgba(220,53,69,.25)')
+// 		}
+// 		else{
+// 			$(this).css('border-color','#ced4da')
+// 			$(this).css('box-shadow','0 0 0 .2rem white')
+// 			$(this).siblings('div').text('')
+// 		}
+// 	})
+// });
+	document.getElementById('myForm').addEventListener('submit', function(event) {
+    var firstNameInput = document.getElementById('fname');
+    
+    // Custom validation for required field
+    if (firstNameInput.validity.valueMissing) {
+      firstNameInput.setCustomValidity('First name is required.');
+    } else if (firstNameInput.validity.patternMismatch) {
+      firstNameInput.setCustomValidity('First name should only contain letters (no numbers or special characters).');
+    } else {
+      firstNameInput.setCustomValidity(''); // Clear custom message if valid
+    }
+  });
+</script>
 </html>

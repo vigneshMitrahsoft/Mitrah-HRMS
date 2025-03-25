@@ -47,3 +47,7 @@ class Employee(models.Model):
     class Meta:
         db_table = 'employee'
 
+# class EmployeeAttendance(models.Model):
+#     attendance_id = models.BigAutoField(primary_key=True)
+#     employee_id = models.ForeignKey(Employee, on_delete=models.DO_NOTHING, related_name = 'EmployeeAttendance')
+#     date = models.DateField()
