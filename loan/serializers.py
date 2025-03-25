@@ -20,7 +20,7 @@ class CreateloanSerializer(serializers.Serializer):
     # employee_id = serializers.IntegerField()
     # requested_date = serializers.DateTimeField()
     # approved_date = serializers.DateTimeField   
-    reasons = serializers.CharField(required=True)
+    reasons = serializers.CharField()
     repayment_period = serializers.IntegerField(required=True)
     monthly_emi = serializers.FloatField(required=True)
     # status = serializers.CharField(max_length=50)
