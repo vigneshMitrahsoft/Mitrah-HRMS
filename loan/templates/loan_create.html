@@ -13,8 +13,8 @@
         {% csrf_token %}
         <div class="form-group">
           <label for="loan_type">Loan Type</label>
-          <!-- <input type="text" class="form-control" id="loan_type" name="loan_type" required> -->
-          <select name="loan_type" id="loan_type" class="form-control" required>
+          <!-- <input type="text" class="form-control" id="loan_type" name="loan_type" > -->
+          <select name="loan_type" id="loan_type" class="form-control" >
             <option value=""></option>
             <option value="Loan">Loan</option>
             <option value="Advance salary">Advance Salary</option>
@@ -27,7 +27,7 @@
             class="form-control"
             id="loan_amount"
             name="loan_amount"
-            required
+            
           />
         </div>
         <div class="form-group">
@@ -36,7 +36,7 @@
             name="repayment_type"
             id="repayment_type"
             class="form-control"
-            required
+            
           >
             <option value=""></option>
             <option value="Monthly">Monthly</option>
@@ -44,7 +44,7 @@
         </div>
         <div class="form-group">
             <label for="method">Choose Repayment Method</label>
-            <select name="method" id="method" class="form-control" required>
+            <select name="method" id="method" class="form-control" >
                 <option value=""></option>
                 <option value="Percentage">Percentage of Salary</option>
                 <option value="Fixed">Fixed Amount</option>
@@ -53,7 +53,7 @@
 
         <div class="form-group" >
             <label for="percentage_amount">Percentage of Salary</label>
-            <input type="number" class="form-control" id="percentage_amount" name="percentage_amount" required>
+            <input type="number" class="form-control" id="percentage_amount" name="percentage_amount" >
         </div>
 
         <div class="form-group">
@@ -63,7 +63,7 @@
             class="form-control"
             id="fixed_amount"
             name="fixed_amount"
-            required
+            
           />
         </div>
         <div class="form-group">
@@ -73,7 +73,7 @@
             id="reasons"
             name="reasons"
             rows="4"
-            required
+            
           ></textarea>
         </div>
         <button type="submit" class="btn btn-success">Apply</button>
@@ -83,7 +83,54 @@
       </form>
       <!-- <button class="btn btn-secondary"><a href="{% url 'loan_list_template' %}">Back</a></button> -->
     </div>
+
     <script>
+      $(document).ready(function () {
+        function toggleFieldsBasedOnLoanType() {
+          var loan_type = $("#loan_type").val();
+          if (loan_type === "Loan") {
+            $("#repayment_type").closest(".form-group").show();
+            $("#method").closest(".form-group").show();
+            toggleFieldsBasedOnMethod(); // Call method toggle logic
+          } else if (loan_type === "Advance salary") {
+            $("#repayment_type").closest(".form-group").hide();
+            $("#method").closest(".form-group").hide();
+            $("#percentage_amount").closest(".form-group").hide();
+            $("#fixed_amount").closest(".form-group").hide();
+          } else {
+            $("#repayment_type").closest(".form-group").hide();
+            $("#method").closest(".form-group").hide();
+            $("#percentage_amount").closest(".form-group").hide();
+            $("#fixed_amount").closest(".form-group").hide();
+          }
+        }
+    
+        function toggleFieldsBasedOnMethod() {
+          var method = $("#method").val();
+          if (method === "Percentage") {
+            $("#percentage_amount").closest(".form-group").show();
+            $("#fixed_amount").closest(".form-group").hide();
+          } else if (method === "Fixed") {
+            $("#percentage_amount").closest(".form-group").hide();
+            $("#fixed_amount").closest(".form-group").show();
+          } else {
+            $("#percentage_amount").closest(".form-group").hide();
+            $("#fixed_amount").closest(".form-group").hide();
+          }
+        }
+    
+        toggleFieldsBasedOnLoanType();
+    
+        $("#loan_type").change(function () {
+          toggleFieldsBasedOnLoanType();
+        });
+    
+        $("#method").change(function () {
+          toggleFieldsBasedOnMethod();
+        });
+      });
+    </script>
+    <!-- <script>
       $(document).ready(function () {
         $("#loan_type").change(function () {
           var loan_type = $(this).val();
@@ -147,7 +194,7 @@
         //     }
         //   }
         // });
-      });
+      }); -->
     </script>
   </body>
 </html>

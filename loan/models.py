@@ -18,8 +18,8 @@ class LoanDeduction(models.Model):
     percentage_amount = models.FloatField(blank=True, null=True)
     fixed_amount = models.FloatField(blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, default= 'Pending')
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True,blank=True, null=True)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:

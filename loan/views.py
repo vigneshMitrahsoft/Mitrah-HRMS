@@ -22,18 +22,18 @@ def loan_create(request):
     if request.method == 'POST':
         loan_type = request.POST.get('loan_type')
         loan_amount = request.POST.get('loan_amount')   
-        reasons = request.POST.get('reasons')
-        repayment_type = request.POST.get('repayment_type')
-        percentage_amount = request.POST.get('percentage_amount')   
-        fixed_amount = request.POST.get('fixed_amount')
-        LoanDeduction.objects.create(loan_type = loan_type, loan_amount = loan_amount, reasons = reasons, requested_date=datetime.now(), repayment_type = repayment_type, percentage_amount= percentage_amount, fixed_amount = fixed_amount, created_at = datetime.now())
+        reasons = request.POST.get('reasons').strip()
+        repayment_type = request.POST.get('repayment_type') or None
+        percentage_amount = request.POST.get('percentage_amount') or None  
+        fixed_amount = request.POST.get('fixed_amount') or None
+        LoanDeduction.objects.create(loan_type = loan_type, loan_amount = loan_amount, reasons = reasons.strip(), requested_date=datetime.now(), repayment_type = repayment_type, percentage_amount= percentage_amount, fixed_amount = fixed_amount, created_at = datetime.now())
         return redirect('loan_list_template')
     return render(request, 'loan_create.html')
     
-def loan_detail(request,pk):
+def loan_detail_by_employee(request,pk):
     if request.method == 'GET':
-        loan = LoanDeduction.objects.get(loan_id = pk)
-        return render(request, 'loan_details.html',{'loan':loan})
+        loans = LoanDeduction.objects.filter(employee_id = pk, is_deleted = False)
+        return render(request, 'loan_details_by_employee.html',{'loans':loans,'employee_id':pk})
 
 def loan_update(request,pk):
     loan = LoanDeduction.objects.get(loan_id = pk)
@@ -41,10 +41,10 @@ def loan_update(request,pk):
         loan_type = request.POST.get('loan_type')
         loan_amount = request.POST.get('loan_amount')   
         reasons = request.POST.get('reasons')
-        repayment_type = request.POST.get('repayment_type')
-        percentage_amount = request.POST.get('percentage_amount')
-        fixed_amount = request.POST.get('fixed_amount')
-        LoanDeduction.objects.filter(loan_id = pk).update(loan_type = loan_type, loan_amount = loan_amount, reasons = reasons, repayment_type = repayment_type,percentage_amount = percentage_amount, fixed_amount = fixed_amount)
+        repayment_type = request.POST.get('repayment_type') or None
+        percentage_amount = request.POST.get('percentage_amount') or None
+        fixed_amount = request.POST.get('fixed_amount') or None
+        LoanDeduction.objects.filter(loan_id = pk).update(loan_type = loan_type, loan_amount = loan_amount, reasons = reasons.strip(), repayment_type = repayment_type,percentage_amount = percentage_amount, fixed_amount = fixed_amount)
         return HttpResponseRedirect(reverse('loan_list_template')) 
     return render(request, 'loan_update.html',{'loan': loan})
     
@@ -52,6 +52,22 @@ def loan_delete(request,pk):
     # if request.method == 'POST':
         LoanDeduction.objects.filter(loan_id = pk).update(is_deleted = True)
         return HttpResponseRedirect(reverse('loan_list_template'))
+
+
+
+
+
+def request_acceptance(request,pk):
+    # if request:
+    #     try:
+    #         LoanDeduction.objects.get(loan_id = pk, is_deleted = False, status = 'pending')
+    #     except LoanDeduction.DoesNotExist:
+    #         return HttpResponse("Loan request not found")
+    pass
+
+
+        
+
 
 # class LoanList(APIView):
 #     def get(self,request):
