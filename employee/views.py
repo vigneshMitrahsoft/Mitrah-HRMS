@@ -1,6 +1,7 @@
 from django.shortcuts import render,HttpResponse,redirect
 from .models import *
 from datetime import date
+from django.contrib.auth.hashers import make_password
 
 def get(request):
     employee_list = Employee.objects.all().values()
@@ -33,7 +34,7 @@ def addEmployee(request):
     date_of_joining = request.POST['date_of_joining']
     if employee_id=="":
         print("hlooo")
-        # employee = Employee.objects.create(company_id = company, first_name = first_name,last_name = last_name,password = password,email = email, date_of_birth = dob, address = address, role_id = role,type_id = type, created_by = "testing", updated_by = "testing",date_of_joining = date_of_joining)
+                    # employee = Employee.objects.create(company_id = company, first_name = first_name,last_name = last_name,password = password,email = email, date_of_birth = dob, address = address, role_id = role,type_id = type, created_by = "testing", updated_by = "testing",date_of_joining = date_of_joining)
         pass
     else:
         print("dfdsdsfjsn",employee_id)
@@ -58,4 +59,19 @@ def employeeUpdate(request,id):
     roles = EmployeeRole.objects.all().values()
     types = EmployeeType.objects.all().values()
     return render(request,"employee_add_update.html",{'companies':companies,'types':types,'roles':roles,'employee':employee,'header':'Update'})
+
+
+from django.contrib.auth.hashers import check_password
+def passsword_check(request):
+    plain_password = 'navis'
+    hashed_password = make_password(plain_password)
+    print("hash--->",hashed_password)
+    check_value = "navis"
+    hashed_2 = make_password(check_value)
+    print("hash2--->",hashed_2)
+    if hashed_password == hashed_2:
+        print("Password is correct!")
+    else:
+        print("Password is incorrect!")
+
 

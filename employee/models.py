@@ -1,9 +1,9 @@
 from django.db import models
 
-class Company(models.Model):
+class company(models.Model):
     company_id = models.BigAutoField(primary_key=True)
     company_name = models.CharField(max_length=100)
-    address = models.TextField()
+    address = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.CharField(max_length=100)
@@ -11,38 +11,38 @@ class Company(models.Model):
     class Meta:
         db_table = 'company'
 
-class EmployeeRole(models.Model):
+class employee_role(models.Model):
     role_id = models.BigAutoField(primary_key=True)
     role_name = models.CharField(max_length=100)
     
     class Meta:
         db_table = 'employee_role'
 
-class EmployeeType(models.Model):
+class employee_type(models.Model):
     type_id = models.BigAutoField(primary_key=True)
     type_name = models.CharField(max_length=100)
 
     class Meta:
         db_table = 'employee_type'
     
-class Employee(models.Model):
+class employee(models.Model):
     employee_id = models.BigAutoField(primary_key=True)
-    company_id = models.ForeignKey(Company, on_delete=models.DO_NOTHING, related_name = 'Company')
+    company_id = models.ForeignKey(company, on_delete=models.DO_NOTHING, related_name = 'companyid')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    email = models.CharField(max_length=100)
-    password = models.TextField(null=True)
+    email = models.EmailField(max_length=150)
+    password = models.CharField(max_length=100,default=None)
     date_of_birth = models.DateField()
-    address = models.TextField()
-    role_id = models.ForeignKey(EmployeeRole, on_delete=models.DO_NOTHING, related_name = 'EmployeeRole')
-    date_of_joining = models.DateTimeField()
-    type_id = models.ForeignKey(EmployeeType, on_delete=models.DO_NOTHING, related_name = 'EmployeeType')
+    address = models.CharField(max_length=100)
+    role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid')
+    date_of_joining = models.DateField()
+    type_id = models.ForeignKey(employee_type, on_delete=models.DO_NOTHING, related_name = 'employee_typeid')
     employee_last_date = models.DateTimeField(default=None,null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.CharField(max_length=100)
-    updated_by = models.CharField(max_length=100)
+    created_by = models.IntegerField(null=True)
+    updated_by = models.IntegerField(null=True)
 
     class Meta:
         db_table = 'employee'
