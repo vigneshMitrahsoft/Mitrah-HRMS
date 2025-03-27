@@ -33,8 +33,8 @@ class Repayment(models.Model):
     payment_date = models.DateTimeField(blank=True, null=True)
     amount_paid = models.FloatField(blank=True)
     remaining_balance = models.FloatField(blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True,blank=True, null=True)
 
     class Meta:
         db_table = 'repayments'
