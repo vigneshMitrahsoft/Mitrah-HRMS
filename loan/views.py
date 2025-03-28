@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from loan.serializers import CreateloanSerializer, LoanSerializer, RepaymentSerializer, UpdateloanSerializer   
+from loan.serializers import *
 from .models import LoanDeduction, Repayment
 from datetime import datetime
 # Create your views here.

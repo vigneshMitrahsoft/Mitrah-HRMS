@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 import string
 from rest_framework.exceptions import ValidationError
 from rest_framework import status
@@ -62,7 +62,7 @@ def create_repayment_records(pk):
     loan = check_loan_exist(pk)
 
     loan_amount = loan.loan_amount
-    repayment_type = loan.repayment_type
+    repayment_type = loan.repayment_type.strip().lower()
     remaining_balance = loan.loan_amount
     repayments_records =[]
 
@@ -82,9 +82,17 @@ def create_repayment_records(pk):
             repayment = Repayment(loan_id = loan, payment_date = payment_date, amount_paid = monthly_payment, remaining_balance = remaining_balance - monthly_payment)
             repayments_records.append(repayment)
             remaining_balance -= monthly_payment
-            payment_date += timezone.timedelta(days=30)
+            payment_date += timedelta(days=30)
 
-    repayment = Repayment.objects.bulk_create(repayments_records)
+    print("Repayments to be created:", repayments_records)
+
+# Attempt bulk create
+    try:
+        repayment = Repayment.objects.bulk_create(repayments_records)
+        print(f"Successfully created {len(repayment)} repayment records.")
+    except Exception as e:
+        print("Error creating repayment records:", e)
+    
     return repayment
 
 
@@ -92,12 +100,12 @@ def create_repayment_records(pk):
 @api_view(['GET'])
 def loan_list(request):
     loan = LoanDeduction.objects.all()
-    serializer = LoanSerializer(loan, many=True)
+    serializer = loanSerializer(loan, many=True)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def loan_create(request):
-    serializer = CreateloanSerializer(data = request.data)
+    serializer = createLoanSerializer(data = request.data)
     if serializer.is_valid():
         LoanDeduction.objects.create(**serializer.validated_data)
         return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Loan created successfully"},status=status.HTTP_201_CREATED)
@@ -106,14 +114,14 @@ def loan_create(request):
 @api_view(['GET'])
 def loan_detail_by_employee(request,pk):
     loan = check_loan_exist(pk)
-    serializer = LoanSerializer(loan)
+    serializer = loanSerializer(loan)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
 def update_loan(request,pk):
     loan = check_loan_exist(pk)
-    serializer = UpdateloanSerializer(loan, data=request.data, partial=True)  
+    serializer = updateLoanSerializer(loan, data=request.data, partial=True)  
     if serializer.is_valid():
         LoanDeduction.objects.filter(loan_id=pk).update(**serializer.validated_data, updated_at=datetime.now())   
         return Response({"statuscode": status.HTTP_200_OK,"status":"success","message":"Loan updated successfully"},status=status.HTTP_200_OK) 
@@ -129,7 +137,7 @@ def loan_delete(request,pk):
 def request_acceptance(request,pk):
     loan = check_loan_exist(pk)
     print(request.data,"data from request")
-    serializer = LoanStatusUpdateSerializer(loan, data=request.data, partial=True)
+    serializer = loanStatusUpdateSerializer(loan, data=request.data, partial=True)
     if serializer.is_valid():
         dataz = serializer.validated_data
 
@@ -141,13 +149,19 @@ def request_acceptance(request,pk):
         
         if dataz['status'] == 'Accepted':
             print("inside the accpt sts")
-            LoanDeduction.objects.filter(loan_id=pk).update(status = "Accepted", updated_at=datetime.now(),approved_date=datetime.now())   
+            LoanDeduction.objects.filter(loan_id=pk).update(status = "Accepted", updated_at=datetime.now(),approved_date=datetime.now()) 
+            print("Calling create_repayment_records function...")  
             create_repayment_records(pk)
+            print("create_repayment_records function executed.")
             return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Loan accepted successfully and created repayment"},status=status.HTTP_201_CREATED)
         
         if dataz['status'] == 'Rejected':
             LoanDeduction.objects.filter(loan_id = pk).update(status ="Rejected", updated_at = datetime.now())
             return  Response({"statuscode" : status.HTTP_200_OK, "status":'success', 'message' : "Loan rejected successfully"}, status = status.HTTP_200_OK)
+        
+        if dataz['status'] == "Completed":
+            LoanDeduction.objects.filter(loan_id = pk).update(status ="Completed", updated_at = datetime.now())
+            return Response({"statuscode" : status.HTTP_200_OK, "status":'success', 'message' : "Loan completed successfully"}, status=status.HTTP_200_OK)
 
     return Response({"message":serializer.errors,"status":"error"},status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,20 +171,24 @@ def request_acceptance(request,pk):
 @api_view(['GET'])
 def repayment_list(request):
     repayment = Repayment.objects.all()
-    serializer = RepaymentSerializer(repayment, many=True)
+    serializer = repaymentSerializer(repayment, many=True)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def repayment_detail(request,pk):
-    repayment = Repayment.objects.get(repayment_id = pk)
-    serializer = RepaymentSerializer(repayment)
+    repayment = Repayment.objects.filter(loan_id = pk)
+    serializer = repaymentSerializer(repayment, many = True)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
-# @api_view(['POST'])
-# def repayment_create(request):
-#     serializer = RepaymentSerializer(data = request.data)
-#     if serializer.is_valid():
-#         Repayment.objects.create(**serializer.validated_data)
-#         return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Repayment created successfully"},status=status.HTTP_201_CREATED)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['POST'])
+def repayment_create(request,pk):
+    loan = check_loan_exist(pk)
+    request.data['loan_id'] = loan.loan_id
+    serializer = repaymentCreateSerializer(data = request.data)
+    if serializer.is_valid():
+        Repayment.objects.create(**serializer.validated_data)
+        return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Repayment created successfully"},status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# @api_view(['PATCH'])
 

@@ -18,8 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 
+app=([
+    path('employees/',include('employee.urls')),
+    path('loans/',include('loan.urls'))
+])
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("",include('employee.urls')),
-    path("",include('loan.urls'))
+    path('api/',include(app))
 ]
