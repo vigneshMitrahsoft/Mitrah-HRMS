@@ -21,7 +21,7 @@ class attendance_entries(models.Model):
     entry_id = models.BigAutoField(primary_key = True)
     attendance_id = models.ForeignKey(employee_attendance, on_delete=models.DO_NOTHING, related_name = 'attendanceid')
     checkin_entry = models.DateTimeField()
-    checkout_entry = models.DateTimeField()
+    checkout_entry = models.DateTimeField(null = True)
 
     class Meta:
         db_table = 'attendance_entries'

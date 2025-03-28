@@ -65,10 +65,8 @@ from django.contrib.auth.hashers import check_password
 def passsword_check(request):
     plain_password = 'navis'
     hashed_password = make_password(plain_password)
-    print("hash--->",hashed_password)
     check_value = "navis"
     hashed_2 = make_password(check_value)
-    print("hash2--->",hashed_2)
     if hashed_password == hashed_2:
         print("Password is correct!")
     else:
