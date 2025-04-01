@@ -160,3 +160,5 @@ SIMPLE_JWT = {
     'TOKEN_OBTAIN_SERIALIZER': 'employee.serializers.MyTokenObtainPairSerializer',
     'TOKEN_REFRESH_SERIALIZER': 'employee.serializers.customTokenRefreshSerializer'
 }
+
+import settings_local
