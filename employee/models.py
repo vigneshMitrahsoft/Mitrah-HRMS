@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
+from company.models import *
 
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -20,16 +21,6 @@ class EmployeeManager(BaseUserManager):
     def get_by_natural_key(self, email):
         return self.get(email=email)
 
-class company(models.Model):
-    company_id = models.BigAutoField(primary_key=True)
-    company_name = models.CharField(max_length=100)
-    address = models.CharField(max_length=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.CharField(max_length=100)
-
-    class Meta:
-        db_table = 'company'
 
 class employee_role(models.Model):
     role_id = models.BigAutoField(primary_key=True)

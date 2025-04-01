@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "employee",
     "loan",
+    "company",
     "attendance",
     'rest_framework',
     "rest_framework_simplejwt"
@@ -161,4 +162,4 @@ SIMPLE_JWT = {
     'TOKEN_REFRESH_SERIALIZER': 'employee.serializers.customTokenRefreshSerializer'
 }
 
-import settings_local
+from .settings_local import *
