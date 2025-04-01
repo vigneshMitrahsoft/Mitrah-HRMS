@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Employee</title>
+	{% include 'header.html' %}
+	<style>
+		.needs-validation .form-control:valid,
+    	.needs-validation .form-control:invalid {
+      	background-image: none !important;
+    }
+		.needs-validation .form-control:valid {
+			border-color: none !important
+	}
+	</style>
+</head>
+<body style ="margin-top:90px">
+	{% include 'navbar.html' %}
+	<div class="outer d-flex flex-column row gy-3">
+		<div class="pb-3">
+			<h1 class="text-center">{{header}} Employee</h1>
+		</div>
+		<div class="container pt-4">
+			<form class="needs-validation" novalidate action="/addemployee" method="post">
+				<input type="hidden" id="hidden" name="employee_id" value="{{employee.employee_id}}">
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="fname">First Name:</label>
+							<input type="text" class="form-control required alphabet" placeholder="Enter First Name" id="fname" name="fname" required value={{employee.first_name}} >
+							<div class="invalid-feedback">field is required</div>
+							
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group" >
+							<label for="lname">Last Name:</label>
+							<input type="text" class="form-control required alphabet" placeholder="Enter Last Name" id="lname" name="lname" value="{{employee.last_name}}" required>
+							<div class="invalid-feedback">field is required</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="email">Email:</label>
+							<input type="email" class="form-control" placeholder="Enter email" id="email" name="email" value="{{employee.email}}" required>
+							<div class="valid-feedback"></div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="pwd">Password:</label>
+							<input type="password" class="form-control password" placeholder="Enter password" id="password" name="password" value="{{employee.password}}" minlength="8" required>
+							<div class="invalid-feedback">field is required</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group">
+							<label for="dob">Date of Birth:</label>
+							<input type="date" class="form-control" id="dob" name="dob" value="{{employee.date_of_birth}}" required>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="sel1">Role:</label>
+							<select class="form-control" name="role" required>
+								{% for role in roles %}
+								{% if employee.role_id_id == role.role_id %}
+									<option value="{{role.role_id}}" selected>{{role.role_name}}</option>
+								{% endif %}
+								<option value ="{{role.role_id}}">{{role.role_name}}</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-6">
+						<div class="form-group" >
+							<label for="sel1">Type:</label>
+							<select class="form-control" id="sel1" name="type">
+								{% for type in types %}
+								{% if employee.type_id_id == type.type_id %}
+									<option value="{{type.type_id}}" selected>{{type.type_name}}</option>
+								{% endif %}
+								<option value ="{{type.type_id}}">{{type.type_name}}</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="form-group">
+							<label for="dob">Date of Joining:</label>
+							<input type="date" class="form-control"  id="dob" name="date_of_joining" value="{{employee.date_of_joining}}">
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="comment">Address:</label>
+					<textarea class="form-control" rows="5" id="address" name="address" >{{employee.address}}</textarea>
+				</div>
+				<button type="submit" class="btn btn-primary">Submit</button>
+			</form>
+		</div>
+	</div>
+</body>
+<script>
+ (function() {
+  window.addEventListener('load', function() {
+	$('.valid-feedback').empty();
+	 var forms = document.getElementsByClassName('needs-validation');
+	 var validation = Array.prototype.filter.call(forms, function(form) {
+		form.addEventListener('submit', function(event) {
+		  if (form.checkValidity() === false) {
+			 event.preventDefault();
+			 event.stopPropagation();
+		  }
+		  form.classList.add('was-validated');
+		}, false);
+	 });
+  }, false);
+})();
+document.querySelectorAll('.alphabet').forEach(function (inputField) {
+	 inputField.addEventListener('input', function () {
+		const errorDiv = this.nextElementSibling;
+		errorDiv.textContent = 'This field is required.';
+
+		if (!this.value.trim()) {
+			errorDiv.textContent = 'This field is required.';
+			this.setCustomValidity(''); 
+		} else if (!/^[A-Za-z]+$/.test(this.value)) {
+			errorDiv.textContent = 'Only letters are allowed.';
+			this.setCustomValidity('Only letters are allowed.');
+		} else {
+			this.setCustomValidity(''); 
+		}
+    });
+});
+document.querySelectorAll('.password').forEach(function (inputField) {
+	 inputField.addEventListener('input', function () {
+		const errorDiv = this.nextElementSibling;
+		errorDiv.textContent = 'This field is required.';
+
+		if (!this.value.trim()) {
+			errorDiv.textContent = 'This field is required.';
+			this.setCustomValidity(''); 
+		} else if (this.value.length <8) {
+			errorDiv.textContent = 'Password must contain more than 8';
+			this.setCustomValidity('Password must contain more than 8');
+		} else {
+			this.setCustomValidity(''); 
+		}
+    });
+});
+// document.getElementById('fname').addEventListener('input', function() {
+//         var fnameInput = this;
+//         var errorDiv = document.getElementById('fname-error');
+//         errorDiv.textContent = 'This field is required.';
+//         if (!fnameInput.value.trim()) {
+//             errorDiv.textContent = 'This field is required.';
+//             fnameInput.setCustomValidity('');
+//         } else if (!/^[A-Za-z]+$/.test(fnameInput.value)) {
+//             errorDiv.textContent = 'Only letters are allowed.';
+//             fnameInput.setCustomValidity('Only letters are allowed.');
+//         } else {
+//             fnameInput.setCustomValidity('');
+//         }
+// });
+
+</script>
+</html>
