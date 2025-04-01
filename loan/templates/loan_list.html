@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Loan List</title>
+    {% include 'header.html' %}
+  </head>
+  <body>
+    <h1>Loan List</h1>
+    <div class="container-fluid">
+      <div class="d-flex justify-content-end mb-3">
+        <a href="{% url 'loan_create_template' %}"><button class="btn btn-primary">Apply Loan</button></a>
+      </div>
+      <table border="1" class="table">
+        <thead class="thead-dark">
+          <tr>
+            <th>Loan Type</th>
+            <th>Amount</th>
+            <th>Requested Date</th>
+            <th>Approved Date</th>
+            <th>Reason</th>
+            <th>Repayment Type</th>
+            <th>Percentage amount</th>
+            <th>Fixed Amount</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        {% for loan in loans %}
+        <tr>
+          <td>{{ loan.loan_type }}</td>
+          <td>{{ loan.loan_amount }}</td>
+          <td>{{ loan.requested_date }}</td>
+          <td>{{ loan.approved_date }}</td>
+          <td>{{ loan.reasons }}</td>
+          <td>{{ loan.repayment_type }}</td>
+          <td>{{ loan.percentage_amount }}</td>
+          <td>{{ loan.fixed_amount }}</td>
+          <td>{{ loan.status }}</td>
+          <td>
+            <a href="{% url 'loan_update_template' loan.loan_id %}"
+              ><button class="btn btn-secondary btn-sm mr-2">EDIT</button></a
+            ><a href="{% url 'loan_delete_template' loan.loan_id %}"
+              onclick="return confirm('Are you sure you want to delete this loan?');"
+              ><button class="btn btn-danger btn-sm">DELETE</button></a
+            >
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </body>
+</html>
