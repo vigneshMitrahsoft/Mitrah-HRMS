@@ -10,6 +10,11 @@ class company_serializer(serializers.ModelSerializer):
         model = company 
         fields = "__all__"
 
+class employee_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = employee
+        fields = "__all__"
+
 
 class get_serializer(serializers.Serializer):
     employee_id = serializers.IntegerField()

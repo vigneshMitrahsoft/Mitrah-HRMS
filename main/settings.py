@@ -87,7 +87,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "hrms",
         "USER":"postgres",
-        "PASSWORD":2023,
+        "PASSWORD":2024,
         "HOST":"localhost",
         "PORT":5432
     }
@@ -161,4 +161,4 @@ SIMPLE_JWT = {
     'TOKEN_REFRESH_SERIALIZER': 'employee.serializers.customTokenRefreshSerializer'
 }
 
-import settings_local
+from .settings_local import *
