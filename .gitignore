@@ -8,3 +8,6 @@ env
 
 #migreation file
 __pycache__
+
+*/migrations/*
+!*/migrations/__init__.py

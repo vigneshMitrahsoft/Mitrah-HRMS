@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Login Page</title>
+	{% include 'header.html' %}
+</head>
+<body>
+	{% include 'navbar.html' %}
+	<body class="d-flex justify-content-center align-items-center min-vh-100 bg-secondary text-warning">
+		<form class="needs-validation" novalidate action="/uservalidation" method="post">
+			<h1 style="padding-bottom:50px;text-align:center;">Login</h1>
+			<div class="form-group">
+				<label for="validationCustom01">UserName</label>
+				<input type="text" class="form-control" id="user_name" name="emailid" required>
+			</div>
+			<div class="form-group">
+				<label for="validationCustom03">Password</label>
+				<input type="text" class="form-control" id="password" name="password" required>
+			</div>
+			<input type="submit" value="submit" class="btn btn-info" id="submit">
+		</form>
+</body>
+</html>
