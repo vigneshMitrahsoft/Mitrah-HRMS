@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     "loan",
     "attendance",
     'rest_framework',
-    "rest_framework_simplejwt"
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",  # Required for token blacklisting
 ]
 
 MIDDLEWARE = [
@@ -147,18 +148,21 @@ REST_FRAMEWORK = {
     ),
     # 'DEFAULT_PERMISSION_CLASSES': (
     #     'rest_framework.permissions.IsAuthenticated',  
-    # ), # if we keep it, authentication will be applied all endpoints implicitly. 
+    # ), # if we keep it, authentication will be applied all endpoints implicitly.
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'auth.views.CustomJWTAuthentication', 
+    ),
 }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'ROTATE_REFRESH_TOKENS': True, # Generates a new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True, # Blacklists old refresh token
     'USER_ID_FIELD': 'employee_id',  # bydefault jwt search id column if you change the column name the id field you should mention like this
     'USER_ID_CLAIM': 'employee_id', # alias name for user_id field. We can provide any name.
-    'TOKEN_OBTAIN_SERIALIZER': 'employee.serializers.MyTokenObtainPairSerializer',
-    'TOKEN_REFRESH_SERIALIZER': 'employee.serializers.customTokenRefreshSerializer'
+    'TOKEN_OBTAIN_SERIALIZER': 'auth.serializers.MyTokenObtainPairSerializer',
+    'TOKEN_REFRESH_SERIALIZER': 'auth.serializers.customTokenRefreshSerializer'
 }
 
 from .settings_local import *

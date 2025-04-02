@@ -16,3 +16,14 @@ class attendance_info_serializer(serializers.ModelSerializer):
     class Meta:
         model = employees_attendance_info
         fields = "__all__"
+
+class attendance_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = employee_attendance
+        fields = "__all__"
+
+class atttendance_info_post_serializer(serializers.Serializer):
+    employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
+    attendance_id = serializers.PrimaryKeyRelatedField(queryset=employee_attendance.objects.all(), required=True)
+    date = serializers.DateField(required = True)
+    status = serializers.CharField(required = True)

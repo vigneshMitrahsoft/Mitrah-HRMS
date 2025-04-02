@@ -21,7 +21,8 @@ from django.urls import path, include
 app = ([
     path('employees/', include('employee.urls')),
     path('loans/', include('loan.urls')),
-    path("attendance/", include('attendance.urls'))
+    path("attendance/", include('attendance.urls')),
+    path("auth/", include('auth.urls'))
 ])
 
 urlpatterns = [

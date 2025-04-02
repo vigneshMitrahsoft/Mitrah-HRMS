@@ -61,43 +61,43 @@ class update_serializer(serializers.Serializer):
 
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+#     @classmethod
+#     def get_token(cls, user):
+#         token = super().get_token(user)
 
-        token['first_name'] = user.first_name
-        token['last_name'] = user.last_name
-        return token
+#         token['first_name'] = user.first_name
+#         token['last_name'] = user.last_name
+#         return token
     
-    def validate(self, attrs):
-        try:
-            data = super().validate(attrs)
-            response = {
-                'status_code': status.HTTP_200_OK,
-                'status' : 'success',
-                'refresh_token' : data.pop('refresh'),
-                'access_token' : data.pop('access')
-            }
+#     def validate(self, attrs):
+#         try:
+#             data = super().validate(attrs)
+#             response = {
+#                 'status_code': status.HTTP_200_OK,
+#                 'status' : 'success',
+#                 'refresh_token' : data.pop('refresh'),
+#                 'access_token' : data.pop('access')
+#             }
 
-            return response
-        except AuthenticationFailed:
-            raise AuthenticationFailed({
-                'status': 'error',
-                'status_code': status.HTTP_401_UNAUTHORIZED,
-                'message': 'Unauthorized User. Invalid username or password. Please try again'
-            })
+#             return response
+#         except AuthenticationFailed:
+#             raise AuthenticationFailed({
+#                 'status': 'error',
+#                 'status_code': status.HTTP_401_UNAUTHORIZED,
+#                 'message': 'Unauthorized User. Invalid username or password. Please try again'
+#             })
         
-class customTokenRefreshSerializer(TokenRefreshSerializer):
-    def validate(self, attrs):
-        print("attrs", attrs)
-        data = super().validate(attrs)  # Get the default validated data
+# class customTokenRefreshSerializer(TokenRefreshSerializer):
+#     def validate(self, attrs):
+#         print("attrs", attrs)
+#         data = super().validate(attrs)  # Get the default validated data
 
-        # Add custom response fields
-        return {
-            'status_code': status.HTTP_200_OK,
-            'status': 'success',
-            'access_token': data['access'],
-            # 'refresh_token': attrs.get('refresh'),  # Ensure refresh token is returned
-            'message': 'Token refreshed successfully'
-        }
+#         # Add custom response fields
+#         return {
+#             'status_code': status.HTTP_200_OK,
+#             'status': 'success',
+#             'access_token': data['access'],
+#             'refresh_token': data.get('refresh'),  # Ensure refresh token is returned
+#             'message': 'Token refreshed successfully'
+#         }

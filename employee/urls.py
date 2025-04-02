@@ -19,6 +19,6 @@ urlpatterns = [
     path("update/<int:id>", api.update_employee),
     path("delete/<int:id>", api.delete_employee),
     path("login", api.login),
-    path("token", TokenObtainPairView.as_view(), name="token_obtain_pair"),  
-    path("token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
+    # path("token", TokenObtainPairView.as_view(), name="token_obtain_pair"),  
+    # path("token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
 ]
