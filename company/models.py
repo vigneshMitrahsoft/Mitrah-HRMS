@@ -19,7 +19,7 @@ class company(models.Model):
 class company_settings(models.Model):
     company_settings_id = models.BigAutoField(primary_key=True)
     company = models.ForeignKey(company,on_delete=models.CASCADE)
-    hra = models.FloatField(blank=True, null=True)
+    HRA = models.FloatField(blank=True, null=True)
     employer_ESI = models.FloatField(blank=True, null=True)
     employee_ESI = models.FloatField(blank=True, null=True)
     employer_PF = models.FloatField(blank=True, null=True)
