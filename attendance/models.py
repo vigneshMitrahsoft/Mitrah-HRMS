@@ -5,7 +5,7 @@ class employee_attendance(models.Model):
     attendance_id = models.BigAutoField(primary_key = True)
     employee_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'employeeid')
     date = models.DateField()
-    check_in = models.DateTimeField()
+    check_in = models.DateTimeField(null = True)
     check_out = models.DateTimeField(null=True)
     effective_hours = models.TimeField(null = True)
     total_hours = models.TimeField(null=True)

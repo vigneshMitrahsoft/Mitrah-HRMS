@@ -22,8 +22,22 @@ class attendance_serializer(serializers.ModelSerializer):
         model = employee_attendance
         fields = "__all__"
 
+# class create_attendance_byinfo_serializer(serializers.Serializer):
+#     employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
+#     date = serializers.DateField(required = True)
+
 class atttendance_info_post_serializer(serializers.Serializer):
     employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
     attendance_id = serializers.PrimaryKeyRelatedField(queryset=employee_attendance.objects.all(), required=True)
     date = serializers.DateField(required = True)
     status = serializers.CharField(required = True)
+
+class get_employee_attendance_serializer(serializers.Serializer):
+    date = serializers.DateField(required = True)
+    attendance_status = serializers.CharField(required = False)
+    leave_status = serializers.CharField(required = False)
+    check_in = serializers.DateTimeField(required = False)
+    check_out = serializers.DateTimeField(required = False)
+    effective_hours = serializers.TimeField(required = False)
+    total_hours = serializers.TimeField(required = False)
+

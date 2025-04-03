@@ -149,9 +149,9 @@ REST_FRAMEWORK = {
     # 'DEFAULT_PERMISSION_CLASSES': (
     #     'rest_framework.permissions.IsAuthenticated',  
     # ), # if we keep it, authentication will be applied all endpoints implicitly.
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'auth.views.CustomJWTAuthentication', 
-    ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    #     'auth.views.CustomJWTAuthentication', 
+    # ),  # custom jwt authentication
 }
 
 SIMPLE_JWT = {

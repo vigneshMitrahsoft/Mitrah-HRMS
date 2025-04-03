@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
-@api_view(['GET'])
+@api_view(('GET',))
 def get_employee(request,id):
     try:
         data = employee.objects.get(employee_id = id,is_active=True)
@@ -20,14 +20,14 @@ def get_employee(request,id):
     serialized_data = get_serializer(data)
     return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
-@api_view(['GET'])
+@api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 def get_employees(request):
     data = employee.objects.filter(is_active=True)
     serialized_data = get_serializer(data,many = True)
     return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
-@api_view(['POST'])
+@api_view(('POST',))
 def create_employee(request):
     serializer = create_serializer(data = request.data)
     if serializer.is_valid():
@@ -42,7 +42,7 @@ def create_employee(request):
         print('errors', serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PATCH'])
+@api_view(('PATCH',))
 def update_employee(request,id):
     try:
         employee_data = employee.objects.get(employee_id = id)
@@ -54,7 +54,7 @@ def update_employee(request,id):
         return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['DELETE'])
+@api_view(('DELETE',))
 def delete_employee(request, id):
     employee_delete = employee.objects.get(employee_id=id)
     employee_delete.is_active = False
@@ -63,7 +63,7 @@ def delete_employee(request, id):
 
 
 
-@api_view(['POST'])
+@api_view(('POST',))
 def login(request):
     email = request.data.get('email')
     password = request.data.get('password')

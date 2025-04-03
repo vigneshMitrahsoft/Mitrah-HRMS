@@ -6,7 +6,7 @@ from rest_framework import status
 from .serializers import *
 from datetime import date,datetime,time, timedelta
 from django.utils import timezone
-# import pytz
+from django.db import connection
 
 def convert_timedelta_to_time(time_diff):
     hours = time_diff.seconds // 3600
@@ -32,11 +32,25 @@ def add_effective_time(old_effective_time, new_effective_time):
     return result_time
 @api_view(('POST',))
 def check_in_entry(request):
-    employee_id = 9
+    employee_id = 5
     today = date.today()
     current_date_time = datetime.now()
     try:
         today_entry = employee_attendance.objects.get(employee_id = employee_id, date = today)
+        if today_entry.check_in is None:
+            today_entry.check_in = current_date_time
+            today_entry.save()
+            data = {
+                "attendance_id":today_entry.attendance_id,
+                "checkin_entry":current_date_time
+            }
+            serializer = attendance_entry_serializer(data = data)
+            if serializer.is_valid():
+                attendance_entries.objects.create(**serializer.validated_data)
+            # remove the checkout value when user will checkin
+            today_entry.check_out = None
+            today_entry.save()
+
         if today_entry.check_out is not None:
             data = {
                 "attendance_id":today_entry.attendance_id,
@@ -82,9 +96,7 @@ def check_in_entry(request):
                 else:
                     attendance_info_data['status'] = leave_type
             except employee_applied_leaves.DoesNotExist:
-                print("except block--->")
                 attendance_info_data['status'] = "Present"
-                print("except block--->",attendance_info_data)
             serializer = attendance_info_serializer(data = attendance_info_data)
             if serializer.is_valid():
                 employees_attendance_info.objects.create(**serializer.validated_data)
@@ -120,7 +132,6 @@ def check_out_entry(request):
             else:
                 total_hours_time = convert_timedelta_to_time(time_difference)
                 effective_hours = add_effective_time(today_entry.effective_hours,total_hours_time)
-                print("effective----->",effective_hours)
                 today_entry.effective_hours = effective_hours
                 today_entry.save()
     except employee_attendance.DoesNotExist:
@@ -128,19 +139,56 @@ def check_out_entry(request):
     #TODO: have to get conirmation for the last checkout entry for the employee continuously work for next day
     return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"checkout successfully"},status=status.HTTP_201_CREATED)
 
-@api_view(('GET',))
-def get_employee_attendance_details(request,id):
-    employee_attendance_data = employee_attendance.objects.get(employee_id = id)
-    serailizer = attendance_serializer(data = employee_attendance_data)
-    # if serializer.is_valid():
-
 @api_view(('POST',))
-def get_employee_attendance_info(request):
-    serializer = atttendance_info_post_serializer(data = request.data)
+def get_employee_attendance(request,id):
+    # NOTE:Before call the api you need to run the get_employee_attendance sql file in db_schema into the postgres db then call the api
+    #TODO: have to get the employee holidays and display into it
+    data = request.data
+    query = "SELECT * FROM fn_get_employee_attendance(%s, %s, %s)"
+    with connection.cursor() as cursor:
+        cursor.execute(query,[id,data['month'],data['year']])
+        result = cursor.fetchall()
+    column_names = [
+    'date', 'attendance_status', 'leave_status',
+    'check_in', 'check_out', 'effective_hours', 'total_hours'
+    ]
+    result_dict = [
+            dict(zip(column_names, row)) for row in result
+    ]
+    serializer = get_employee_attendance_serializer(result_dict,many = True)
+    return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
+@api_view(('POST',))
+def create_employee_attendance_info(request):
+    # attendance_serializer = create_attendance_byinfo_serializer(data = request.data)
+    # if attendance_serializer.is_valid():
+    try:
+        print("hiiii--->")
+        attendance_info = employee_attendance.objects.get(employee_id = request.data['employee_id'],date = request.data['date'])
+    except employee_attendance.DoesNotExist:
+        attendance = employee_attendance.objects.create(employee_id = request.data['employee_id'],date = request.data['date'])
+        attendance_id = attendance.attendance_id
+        request.data['attendance_id'] = attendance_id
+        serializer = atttendance_info_post_serializer(data = request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            create_attendance_info = employees_attendance_info.objects.create(**data, action_by =1)
+            return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(('PATCH',))
+def update_employee_attendance_info(request):
+    id = request.data['employee_id']
+    attendance_id = request.data['attendance_id']
+    try:
+        employee_data = employees_attendance_info.objects.get(employee_id = id, attendance_id = attendance_id)
+    except employee_data.DoesNotExist:
+        return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance_info not found."}, status=status.HTTP_404_NOT_FOUND)
+    serializer = attendance_info_serializer(employee_data, data=request.data, partial=True)
     if serializer.is_valid():
-        data = serializer.validated_data
-        create_attendance_info = employees_attendance_info.objects.create(**data, action_by =1)
-        return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save() 
+        return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
