@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import LoanDeduction, Repayment
 from .serializers import *
+from employee.models import employee
 
 # class LoanList(APIView):
 #     def get(self,request):
@@ -55,7 +56,7 @@ def check_loan_exist(pk):
         return Response ({"details":"loan not found"},status=status.HTTP_404_NOT_FOUND)
     return loan
 
-
+#TODO: function fro creating the repayments 
 def create_repayment_records(pk):
     print("inside the repayment creation")
 
@@ -105,9 +106,11 @@ def loan_list(request):
 
 @api_view(['POST'])
 def loan_create(request):
+    employee_id = 1  #request.employee.employee_id
+    # employee_id = employee.objects.get(employee_id = 1)
     serializer = createLoanSerializer(data = request.data)
     if serializer.is_valid():
-        LoanDeduction.objects.create(**serializer.validated_data)
+        LoanDeduction.objects.create(**serializer.validated_data, employee_id = employee_id)
         return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Loan created successfully"},status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -180,6 +183,7 @@ def repayment_detail(request,pk):
     serializer = repaymentSerializer(repayment, many = True)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
+#TODO: need to implement the creation of repayments     
 @api_view(['POST'])
 def repayment_create(request,pk):
     loan = check_loan_exist(pk)

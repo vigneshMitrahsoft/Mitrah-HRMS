@@ -18,9 +18,15 @@ def company_exists(pk):
 
 @api_view(['GET'])
 def company_list(request):
-    companies = company.objects.get().is_active = True
+    companies = company.objects.filter(is_active = True)
     serializer = companySerializer(companies, many = True)
     return Response({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def specific_company(request, pk):
+    comp = company.objects.get(company_id = pk)
+    serializer = companySerializer(comp)
+    return Response ({"statuscode": status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def company_create(request):
@@ -29,7 +35,7 @@ def company_create(request):
         datas = serializer.validated_data
         comp = company.objects.create(company_name = datas['company_name'],address= datas['address'], created_at = datetime.now())
         company_settings.objects.create(hra = datas['hra'],employer_ESI = datas['employer_ESI'], employee_ESI = datas['employee_ESI'], employer_PF=datas['employer_PF'],employee_PF = datas['employee_PF'],leave_compensation=datas['leave_compensation'],basic_work_hours= datas['basic_work_hours'], sick_leaves= datas['sick_leaves'],casual_leaves=datas['casual_leaves'], company_id = comp)
-        return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Loan created successfully"},status=status.HTTP_201_CREATED)
+        return Response({"statuscode": status.HTTP_201_CREATED,"status":"success","message":"Company created successfully"},status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PATCH'])
