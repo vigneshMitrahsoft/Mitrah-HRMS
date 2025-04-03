@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     "loan",
     "company",
     "attendance",
-    'rest_framework',
+    "rest_framework",
     "rest_framework_simplejwt"
 ]
 
