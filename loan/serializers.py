@@ -128,7 +128,7 @@ class loanStatusUpdateSerializer(serializers.Serializer):
     
 
 class repaymentCreateSerializer(serializers.Serializer):
-    loan_id = serializers.PrimaryKeyRelatedField(queryset = LoanDeduction.objects.all())
+    # loan_id = serializers.PrimaryKeyRelatedField(queryset = LoanDeduction.objects.all())
     payment_date = serializers.DateTimeField()
     amount_paid = serializers.FloatField()
     remaining_balance = serializers.FloatField()

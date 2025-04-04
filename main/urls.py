@@ -22,7 +22,8 @@ app = ([
     path('employees/', include('employee.urls')),
     path('loans/', include('loan.urls')),
     path("attendance/", include('attendance.urls')),
-    path("auth/", include('auth.urls'))
+    path("auth/", include('auth.urls')),
+    path("company/",include('company.urls'))
 ])
 
 urlpatterns = [

@@ -41,8 +41,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "employee",
     "loan",
+    "company",
     "attendance",
-    'rest_framework',
+    "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",  # Required for token blacklisting
 ]
