@@ -32,12 +32,13 @@ def add_effective_time(old_effective_time, new_effective_time):
     return result_time
 @api_view(('POST',))
 def check_in_entry(request):
-    employee_id = 5
+    employee_id = 9
     today = date.today()
     current_date_time = datetime.now()
     try:
         today_entry = employee_attendance.objects.get(employee_id = employee_id, date = today)
         if today_entry.check_in is None:
+            print("hloooo--->")
             today_entry.check_in = current_date_time
             today_entry.save()
             data = {
@@ -50,7 +51,7 @@ def check_in_entry(request):
             # remove the checkout value when user will checkin
             today_entry.check_out = None
             today_entry.save()
-
+            return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"checkin successfully"},status=status.HTTP_201_CREATED)
         if today_entry.check_out is not None:
             data = {
                 "attendance_id":today_entry.attendance_id,
@@ -159,23 +160,22 @@ def get_employee_attendance(request,id):
     return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 @api_view(('POST',))
 def create_employee_attendance_info(request):
-    # attendance_serializer = create_attendance_byinfo_serializer(data = request.data)
-    # if attendance_serializer.is_valid():
-    try:
-        print("hiiii--->")
-        attendance_info = employee_attendance.objects.get(employee_id = request.data['employee_id'],date = request.data['date'])
-    except employee_attendance.DoesNotExist:
-        attendance = employee_attendance.objects.create(employee_id = request.data['employee_id'],date = request.data['date'])
-        attendance_id = attendance.attendance_id
-        request.data['attendance_id'] = attendance_id
-        serializer = atttendance_info_post_serializer(data = request.data)
-        if serializer.is_valid():
-            data = serializer.validated_data
-            create_attendance_info = employees_attendance_info.objects.create(**data, action_by =1)
-            return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_404_NOT_FOUND)
+    serializer = create_attendance_byinfo_serializer(data = request.data)
+    if serializer.is_valid():
+        try:
+            attendance_info = employee_attendance.objects.get(employee_id = request.data['employee_id'],date = request.data['date'])
+        except employee_attendance.DoesNotExist:
+            attendance = employee_attendance.objects.create(**serializer.validated_data)
+            attendance_id = attendance.attendance_id
+            request.data['attendance_id'] = attendance_id
+            serializer = atttendance_info_post_serializer(data = request.data)
+            if serializer.is_valid():
+                data = serializer.validated_data
+                create_attendance_info = employees_attendance_info.objects.create(**data, action_by =1)
+                return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(('PATCH',))
 def update_employee_attendance_info(request):

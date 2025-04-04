@@ -22,9 +22,9 @@ class attendance_serializer(serializers.ModelSerializer):
         model = employee_attendance
         fields = "__all__"
 
-# class create_attendance_byinfo_serializer(serializers.Serializer):
-#     employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
-#     date = serializers.DateField(required = True)
+class create_attendance_byinfo_serializer(serializers.Serializer):
+    employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
+    date = serializers.DateField(required = True)
 
 class atttendance_info_post_serializer(serializers.Serializer):
     employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
