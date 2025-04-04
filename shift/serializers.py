@@ -1,41 +1,10 @@
 from datetime import datetime, timedelta
 from rest_framework import  serializers
-from employee.models import employee
-from .models import *
+from .models import shift
+from shifttype.models import shift_type
+# from employee.models import employee
 
-class shiftTypeSerializer(serializers.ModelSerializer):
-    is_active = serializers.BooleanField(required=False, default=True) 
-    class Meta:
-        model = shift_type 
-        fields = ["shift_type_name","description","created_by","updated_by", "is_active", "created_by", "updated_by"]
-        extra_kwargs = {"created_by": {"read_only": True}, "updated_by": {"read_only": True}}
-    
-    def validate(self, data):
-        if shift_type.objects.filter(shift_type_name=data['shift_type_name']).exists():
-            raise serializers.ValidationError("A shift type already exists.")
-        return data
-
-    def create(self, validated_data):
-        user = 1 #self.context["request"].user
-        validated_data["created_by"] = user
-        validated_data["updated_by"] = user 
-        return shift_type.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        user = 1 #self.context["request"].user
-        validated_data["updated_by"] = user 
-        return super().update(instance, validated_data)
-    
-
-class ShiftTypeListSerializer(serializers.ModelSerializer):
-    # created_by_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = shift_type
-        fields = "__all__" #["shift_type_name", "description", "created_by", "updated_by"] #, "created_by_name"]
-
-
-class ShiftListSerializer(serializers.ModelSerializer):
+class shiftlist_serializer(serializers.ModelSerializer):
     # created_by_name = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField() 
 
@@ -58,15 +27,15 @@ class ShiftListSerializer(serializers.ModelSerializer):
             return f"{hours}h {minutes}m"
         return None
     
-class shiftSerializer(serializers.ModelSerializer):
+class shift_serializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(required=False, default=True) 
     shift_type_name = serializers.CharField(write_only=True)
     shift_type_id = serializers.PrimaryKeyRelatedField(queryset=shift_type.objects.all(), write_only=True)
-    shift_flag = serializers.BooleanField(write_only=True, required=False, default=False) # True - "Night Shift" ; False - "Day Shift"
+    night_shift = serializers.BooleanField(write_only=True, required=False, default=False) # True - "Night Shift" ; False - "Day Shift"
     
     class Meta:
         model = shift
-        fields = ["shift_type_name", "shift_type_id", "start_time", "end_time", "is_active", "created_by", "updated_by", "shift_flag"]
+        fields = ["shift_type_name", "shift_type_id", "start_time", "end_time", "is_active", "created_by", "updated_by", "night_shift"]
         extra_kwargs = {"created_by": {"read_only": True}, "updated_by": {"read_only": True}}
 
     def to_internal_value(self, data):
@@ -76,7 +45,7 @@ class shiftSerializer(serializers.ModelSerializer):
         shift_type_name = data.get("shift_type_name")
         if shift_type_name:
             try:
-                shift_type_obj = shift_type.objects.get(shift_type_name=shift_type_name)
+                shift_type_obj = shift_type.objects.get(shift_type_name=shift_type_name, is_active = True)
                 data["shift_type_id"] = shift_type_obj.shift_type_id
             except shift_type.DoesNotExist:
                 raise serializers.ValidationError({"shift_type_name": "Shift Type not found."})
@@ -84,10 +53,10 @@ class shiftSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         shift_type_id = data.get("shift_type_id")
-        start_time = data.get("start_time")
-        end_time = data.get("end_time")
+        start_time = data.get("start_time", self.instance.start_time)
+        end_time = data.get("end_time", self.instance.end_time)
 
-        if data['shift_flag'] == False and data['start_time'] >= data['end_time']:
+        if data['night_shift'] == False and (start_time > end_time):
             raise serializers.ValidationError("Start time must be before end time.")
         if shift.objects.filter(shift_type_id=shift_type_id, start_time=start_time, end_time=end_time).exists():
             raise serializers.ValidationError("A shift with this shift type, start time, and end time already exists.")
@@ -95,7 +64,7 @@ class shiftSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        Flag = validated_data.pop("shift_flag", False)
+        Flag = validated_data.pop("night_shift", False)
         shift_type_name = validated_data.pop("shift_type_name", None)
         user = 1 # self.context["request"].user
         validated_data["created_by"] = user
@@ -103,15 +72,9 @@ class shiftSerializer(serializers.ModelSerializer):
         return shift.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        Flag = validated_data.pop("shift_flag", False)
+        Flag = validated_data.pop("night_shift", False)
         shift_type_name = validated_data.pop("shift_type_name", None)
         user = 1 # self.context["request"].user
         validated_data["updated_by"] = user 
         return super().update(instance, validated_data)
     
-class employeeListSerializer(serializers.ModelSerializer):
-    # created_by_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = employee_shift
-        fields = "__all__" 

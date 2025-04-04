@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "company",
     "attendance",
     "shift",
+    "shifttype",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",  # Required for token blacklisting
