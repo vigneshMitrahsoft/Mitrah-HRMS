@@ -31,11 +31,11 @@ class shift_serializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(required=False, default=True) 
     shift_type_name = serializers.CharField(write_only=True)
     shift_type_id = serializers.PrimaryKeyRelatedField(queryset=shift_type.objects.all(), write_only=True)
-    night_shift = serializers.BooleanField(write_only=True, required=False, default=False) # True - "Night Shift" ; False - "Day Shift"
+    is_night_shift = serializers.BooleanField(write_only=True, required=False, default=False) # True - "Night Shift" ; False - "Day Shift"
     
     class Meta:
         model = shift
-        fields = ["shift_type_name", "shift_type_id", "start_time", "end_time", "is_active", "created_by", "updated_by", "night_shift"]
+        fields = ["shift_type_name", "shift_type_id", "start_time", "end_time", "is_active", "created_by", "updated_by", "is_night_shift"]
         extra_kwargs = {"created_by": {"read_only": True}, "updated_by": {"read_only": True}}
 
     def to_internal_value(self, data):
@@ -56,7 +56,7 @@ class shift_serializer(serializers.ModelSerializer):
         start_time = data.get("start_time", self.instance.start_time)
         end_time = data.get("end_time", self.instance.end_time)
 
-        if data['night_shift'] == False and (start_time > end_time):
+        if data['is_night_shift'] == False and (start_time > end_time):
             raise serializers.ValidationError("Start time must be before end time.")
         if shift.objects.filter(shift_type_id=shift_type_id, start_time=start_time, end_time=end_time).exists():
             raise serializers.ValidationError("A shift with this shift type, start time, and end time already exists.")
@@ -64,7 +64,7 @@ class shift_serializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        Flag = validated_data.pop("night_shift", False)
+        Flag = validated_data.pop("is_night_shift", False)
         shift_type_name = validated_data.pop("shift_type_name", None)
         user = 1 # self.context["request"].user
         validated_data["created_by"] = user
@@ -72,7 +72,7 @@ class shift_serializer(serializers.ModelSerializer):
         return shift.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        Flag = validated_data.pop("night_shift", False)
+        Flag = validated_data.pop("is_night_shift", False)
         shift_type_name = validated_data.pop("shift_type_name", None)
         user = 1 # self.context["request"].user
         validated_data["updated_by"] = user 
