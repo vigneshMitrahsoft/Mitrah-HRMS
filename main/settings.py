@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "loan",
     "company",
     "attendance",
+    "shift",
+    "shifttype",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",  # Required for token blacklisting
@@ -135,7 +137,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'assests')
+    os.path.join(BASE_DIR, 'assets')
 ]
 
 # Default primary key field type
