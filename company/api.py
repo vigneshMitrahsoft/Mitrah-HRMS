@@ -34,7 +34,7 @@ def company_create(request):
         datas = serializer.validated_data
         comp = company.objects.create(company_name = datas['company_name'], address = datas['address'], created_at = datetime.now())
         company_settings.objects.create(
-            hra = datas['hra'],
+            HRA = datas['hra'],
             employer_ESI = datas['employer_ESI'],
             employee_ESI = datas['employee_ESI'], 
             employer_PF = datas['employer_PF'],

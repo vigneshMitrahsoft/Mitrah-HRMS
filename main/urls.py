@@ -23,7 +23,8 @@ app = ([
     path('loans/', include('loan.urls')),
     path("attendance/", include('attendance.urls')),
     path("auth/", include('auth.urls')),
-    path("company/",include('company.urls'))
+    path("company/",include('company.urls')),
+    path("shift/", include('shift.urls')), 
 ])
 
 urlpatterns = [
