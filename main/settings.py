@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "employee",
     "loan",
     "attendance",
+    'holiday',
     'rest_framework',
     "rest_framework_simplejwt"
 ]
@@ -133,8 +134,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'assests')
+    os.path.join(BASE_DIR, 'assets')
 ]
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -161,4 +164,4 @@ SIMPLE_JWT = {
     'TOKEN_REFRESH_SERIALIZER': 'employee.serializers.customTokenRefreshSerializer'
 }
 
-import settings_local
+from .settings_local import *  
