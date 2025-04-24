@@ -9,6 +9,7 @@ from .models import LoanDeduction, Repayment
 from .serializers import *
 from employee.models import employee
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import APIException
 
 # class LoanList(APIView):
 #     def get(self,request):
@@ -54,7 +55,8 @@ def check_loan_exist(pk):
     try:
         loan = LoanDeduction.objects.get(loan_id = pk)
     except LoanDeduction.DoesNotExist:
-        return Response ({"statuscode" : status.HTTP_404_NOT_FOUND,"status" : "error", "message" :"Loan not found"}, status = status.HTTP_404_NOT_FOUND)
+        raise APIException(detail={"statuscode": 404, "status": "error", "message": "Loan not found"})
+        # return None
     return loan
 
 # #TODO: function fro creating the repayments 
@@ -121,10 +123,6 @@ def loan_create(request):
 def loan_detail_by_employee(request, pk):
     loan = check_loan_exist(pk)
     print(loan, "loan from the detail view")
-
-    if isinstance(loan, Response):
-        return loan  # Return the Response object if loan is not found
-    
     serializer = loanSerializer(loan)
     print(serializer.data, "serializer data")
     return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
@@ -133,8 +131,6 @@ def loan_detail_by_employee(request, pk):
 @api_view(('PATCH',))
 def update_loan(request, pk):
     loan = check_loan_exist(pk)
-    if isinstance(loan, Response):
-        return loan
     serializer = updateLoanSerializer(loan, data = request.data, partial = True)  
     if serializer.is_valid():
         LoanDeduction.objects.filter(loan_id = pk).update(**serializer.validated_data, updated_at = datetime.now())   
@@ -144,16 +140,12 @@ def update_loan(request, pk):
 @api_view(('DELETE',))
 def loan_delete(request, pk):
     loan = check_loan_exist(pk)
-    if isinstance(loan, Response):
-        return loan
     LoanDeduction.objects.filter(loan_id = pk).update(is_deleted = True)
     return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan deleted successfully"}, status = status.HTTP_204_NO_CONTENT)
 
 @api_view(('PATCH',))
 def request_acceptance(request, pk):
     loan = check_loan_exist(pk)
-    if isinstance(loan, Response):
-        return loan
     print(request.data, "data from request")
     serializer = loanStatusUpdateSerializer(loan, data = request.data, partial = True)
     if serializer.is_valid():
@@ -205,8 +197,6 @@ def repayment_detail(request, pk):
 @permission_classes((IsAuthenticated,))
 def repayment_create(request, pk):
     loan = check_loan_exist(pk)
-    if isinstance(loan, Response):
-        return loan
     serializer = repaymentCreateSerializer(data = request.data)
     if serializer.is_valid():
         Repayment.objects.create(**serializer.validated_data, loan_id = loan.loan_id)

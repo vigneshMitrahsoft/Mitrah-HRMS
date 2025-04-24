@@ -24,7 +24,7 @@ class get_serializer(serializers.Serializer):
     email = serializers.EmailField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=True)
+    role_id = serializers.PrimaryKeyRelatedField(queryset=roles.objects.all(), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
@@ -36,7 +36,7 @@ class create_serializer(serializers.Serializer):
     password = serializers.CharField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=True)
+    role_id = serializers.PrimaryKeyRelatedField(queryset=roles.objects.all(), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
@@ -54,7 +54,7 @@ class update_serializer(serializers.Serializer):
     password = serializers.CharField(required = False)
     date_of_birth = serializers.DateField(required = False)
     address = serializers.CharField(required = False)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=False)
+    role_id = serializers.PrimaryKeyRelatedField(queryset=roles.objects.all(), required=False)
     date_of_joining = serializers.DateField(required = False)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=False)
 
