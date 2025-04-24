@@ -34,6 +34,8 @@ class atttendance_info_post_serializer(serializers.Serializer):
 
 class get_employee_attendance_serializer(serializers.Serializer):
     date = serializers.DateField(required = True)
+    day = serializers.CharField(required = True)
+    is_week_off = serializers.BooleanField(required = False)
     attendance_status = serializers.CharField(required = False)
     leave_status = serializers.CharField(required = False)
     check_in = serializers.DateTimeField(required = False)

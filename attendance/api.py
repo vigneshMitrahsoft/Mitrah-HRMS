@@ -37,7 +37,7 @@ def check_in_entry(request):
     current_date_time = datetime.now()
     try:
         today_entry = employee_attendance.objects.get(employee_id = employee_id, date = today)
-        if today_entry.check_in is None:
+        if today_entry.check_in is  None:
             print("hloooo--->")
             today_entry.check_in = current_date_time
             today_entry.save()
@@ -150,13 +150,17 @@ def get_employee_attendance(request,id):
         cursor.execute(query,[id,data['month'],data['year']])
         result = cursor.fetchall()
     column_names = [
-    'date', 'attendance_status', 'leave_status',
+    'date', 'day','is_week_off','attendance_status', 'leave_status',
     'check_in', 'check_out', 'effective_hours', 'total_hours'
     ]
     result_dict = [
             dict(zip(column_names, row)) for row in result
     ]
+    for result in result_dict:
+        result["check_in"] = result["check_in"].strftime("%Y-%m-%d:%H:%M:%S") if result["check_in"] else "00:00:00"
+        result["check_out"] = result["check_out"].strftime("%Y-%m-%d:%H:%M:%S") if result["check_out"] else "00:00:00" 
     serializer = get_employee_attendance_serializer(result_dict,many = True)
+
     return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serializer.data},status=status.HTTP_200_OK)
 @api_view(('POST',))
 def create_employee_attendance_info(request):
@@ -175,6 +179,7 @@ def create_employee_attendance_info(request):
                 return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
         return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(('PATCH',))
@@ -189,6 +194,27 @@ def update_employee_attendance_info(request):
     if serializer.is_valid():
         serializer.save() 
         return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(('POST',))
+def update_employee_attendance_entries(request,id):
+    data = request.data
+    if 'check_in' not in data and 'check_out' not in data:
+        return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Please provide checkin or checkout time"}, status=status.HTTP_404_NOT_FOUND) 
+    if 'check_in' in data:
+        today_entry = attendance_entries.objects.get(entry_id = id)
+        check_in_date = today_entry.checkin_entry
+        print("totay_entry---->",check_in_date)
+        check_in_date = check_in_date.replace(hour = 10, minute = 30, second = 0)
+        print("modify---->",check_in_date)
+    if 'check_out' in data:
+        print("check_out entry")
+    employee_id = attendance_entries.objects.filter(attendance_id = today_entry.attendance_id)
+    for emp in employee_id:
+        print("employeee--->",emp.checkin_entry)
+    
+
+    
 
 
