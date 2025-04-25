@@ -24,9 +24,14 @@ class get_serializer(serializers.Serializer):
     email = serializers.EmailField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=roles.objects.all(), required=True)
+    # role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
+    roles = serializers.SerializerMethodField()
+
+    def get_roles(self, obj):
+        """Fetch role names associated with the employee."""
+        return list(employee_roles.objects.filter(employee=obj, is_active=True).values_list("role__role_name", flat=True))
 
 class create_serializer(serializers.Serializer):
     company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
@@ -36,10 +41,17 @@ class create_serializer(serializers.Serializer):
     password = serializers.CharField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=roles.objects.all(), required=True)
+    role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
+    def validate(self,data):
+        data['email']= data['email'].lower()
+        user_exists = employee.objects.filter(email=data['email']).exists()
+        if user_exists:
+            raise serializers.ValidationError({"error":"Email already exists."})
+        return data
+    
     # def get_company_id(self, data):
     #     return company.objects.get(company_id = data.company_id)
 
