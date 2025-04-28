@@ -10,7 +10,7 @@ from .serializers import *
 from employee.models import employee
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException
-from employee.api import role_required
+from employee.api import IsAuthorized
 
 # class LoanList(APIView):
 #     def get(self,request):
@@ -104,7 +104,7 @@ def check_loan_exist(pk):
 
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
-@role_required(['hr'])
+@IsAuthorized(['hr'])
 def loan_list(request):
     loan = LoanDeduction.objects.all()
     serializer = loanSerializer(loan, many = True)
@@ -176,9 +176,6 @@ def request_acceptance(request, pk):
             return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan completed successfully"}, status = status.HTTP_200_OK)
 
     return Response({"message" : serializer.errors, "status" : "error"}, status = status.HTTP_400_BAD_REQUEST)
-
-
-
 
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
