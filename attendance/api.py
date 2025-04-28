@@ -30,6 +30,7 @@ def add_effective_time(old_effective_time, new_effective_time):
     minutes, seconds = divmod(remainder, 60)
     result_time = datetime(1900, 1, 1, int(hours), int(minutes), int(seconds)).time()
     return result_time
+
 @api_view(('POST',))
 def check_in_entry(request):
     employee_id = 9
@@ -197,24 +198,99 @@ def update_employee_attendance_info(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(('POST',))
+# @api_view(('PATCH',))
+# def update_employee_attendance_entries(request,id):
+#     data = request.data
+#     if 'check_in' not in data and 'check_out' not in data:
+#         return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Please provide checkin or checkout time"}, status=status.HTTP_404_NOT_FOUND) 
+#     if 'check_in' in data:
+#         today_entry = attendance_entries.objects.get(entry_id = id)
+#         check_in_date = today_entry.checkin_entry
+#         print("totay_entry---->",check_in_date)
+#         check_in_date = check_in_date.replace(hour = 10, minute = 30, second = 0)
+#         print("modify---->",check_in_date)
+#     if 'check_out' in data:
+#         print("check_out entry")
+#     employee_id = attendance_entries.objects.filter(attendance_id = today_entry.attendance_id)
+#     for emp in employee_id:
+#         print("employeee--->",emp.checkin_entry)
+
+@api_view(('PATCH',))
 def update_employee_attendance_entries(request,id):
     data = request.data
     if 'check_in' not in data and 'check_out' not in data:
         return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Please provide checkin or checkout time"}, status=status.HTTP_404_NOT_FOUND) 
+    today_entry = attendance_entries.objects.get(entry_id = id)
     if 'check_in' in data:
-        today_entry = attendance_entries.objects.get(entry_id = id)
         check_in_date = today_entry.checkin_entry
         print("totay_entry---->",check_in_date)
-        check_in_date = check_in_date.replace(hour = 10, minute = 30, second = 0)
+        update_checkin_date = data['check_in'].strip().replace(".", ":").split(":")
+        # update_checkin_date = update_checkin_date.replace(".", ":")
+        # update_checkin_date = update_checkin_date.split(":")
+        print("update_checkin_date----->",update_checkin_date[0],update_checkin_date[1])
+        hour = int(update_checkin_date[0])
+        minute = int(update_checkin_date[1])
+        try:
+            second = int(update_checkin_date[2])
+        except:
+            second = 0
+        check_in_date = check_in_date.replace(hour = hour, minute = minute , second = second)
         print("modify---->",check_in_date)
+        # today_entry.checkin_entry = check_in_date       #TODO must be uncommented to update the checkin entry
+        # today_entry.save()
     if 'check_out' in data:
         print("check_out entry")
-    employee_id = attendance_entries.objects.filter(attendance_id = today_entry.attendance_id)
+        check_out_date = today_entry.checkout_entry
+        print("totay_entry---->",check_out_date)
+        update_checkout_date = data['check_out'].strip().replace(".", ":").split(":")
+        # update_checkout_date = update_checkout_date.replace(".", ":")
+        # update_checkout_date = update_checkout_date.split(":")
+        print("update_checkout_date----->",update_checkout_date[0],update_checkout_date[1])
+        hour = int(update_checkout_date[0])
+        minute = int(update_checkout_date[1])
+        try:
+            second = int(update_checkout_date[2])
+        except:
+            second = 0
+        check_out_date = check_out_date.replace(hour = hour, minute = minute , second = second)
+        print("modify---->",check_out_date)
+        # today_entry.checkout_entry = check_out_date      #TODO must be uncommented to update the checkout entry
+        # today_entry.save()
+
+    employee_id = attendance_entries.objects.filter(attendance_id = today_entry.attendance_id).order_by('entry_id')
+    
     for emp in employee_id:
-        print("employeee--->",emp.checkin_entry)
+        time_difference = emp.checkout_entry - emp.checkin_entry
+        effective_hours_entries = convert_timedelta_to_time(time_difference)
+        print("emp->",emp)
+        print("emp2->",employee_id.last())
+        
+        if emp == employee_id[0]:
+            total_entry = effective_hours_entries 
+            print("entries1 ---->",emp.checkin_entry,emp.checkout_entry)
+            # print("emp length---->",len(emp))
+            # print("emp length---->",len(employee_id))
+
+        if emp.entry_id == employee_id.last().entry_id:
+            print("hiiii last entry")
+            
+        else:
+            print("entries ---->",emp.checkin_entry,emp.checkout_entry)
+            print("the result ---->",total_entry,effective_hours_entries)
+            total_entry = add_effective_time(total_entry,effective_hours_entries)
+            print("total_entry----->",total_entry)
+        
+        
+    print("employeee--->",total_entry)
+    attendance_id = today_entry.attendance_id
+    employee_attendace = employee_attendance.objects.get(attendance_id = attendance_id.attendance_id)
+    print("employee_attendance----->",employee_attendace.total_hours)
+    total_hours = employee_attendace.check_out - employee_attendace.check_in
+    print("total_hours----->",total_hours)
+    today_entry = convert_timedelta_to_time(total_hours)
+    print("today_entry----->",today_entry)
     
 
-    
+
 
 
