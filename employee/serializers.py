@@ -24,10 +24,14 @@ class get_serializer(serializers.Serializer):
     email = serializers.EmailField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=True)
+    # role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
+    roles = serializers.SerializerMethodField()
 
+    def get_roles(self, obj):
+        roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
+        return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
 class create_serializer(serializers.Serializer):
     company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
     first_name = serializers.CharField(required = True)
@@ -36,29 +40,45 @@ class create_serializer(serializers.Serializer):
     password = serializers.CharField(required = True)
     date_of_birth = serializers.DateField(required = True)
     address = serializers.CharField(required = True)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=True)
+    role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
+    def validate(self,data):
+        data['email']= data['email'].lower()
+        user_exists = employee.objects.filter(email=data['email']).exists()
+        if user_exists:
+            raise serializers.ValidationError({"error":"Email already exists."})
+        return data
+    
     # def get_company_id(self, data):
     #     return company.objects.get(company_id = data.company_id)
 
     # def get_password(self, data):
     #     return make_password(data['password'])
 
-class update_serializer(serializers.Serializer):
-    company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=False)
-    first_name = serializers.CharField(required = False)
-    last_name = serializers.CharField(required = False)
-    email = serializers.EmailField(required = False)
-    password = serializers.CharField(required = False)
-    date_of_birth = serializers.DateField(required = False)
-    address = serializers.CharField(required = False)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=employee_role.objects.all(), required=False)
-    date_of_joining = serializers.DateField(required = False)
-    type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=False)
 
+class update_serializer(serializers.ModelSerializer):
+    # This will directly accept a list of role IDs (primary keys)
+    role_ids = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()),
+        required=False,
+        allow_empty=True
+    )
 
+    class Meta:
+        model = employee
+        fields = [
+            'company_id', 'first_name', 'last_name', 'email', 'password',
+            'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id'
+        ]
+
+    def validate_role_ids(self, value):
+        # Ensure there are no duplicates in the provided role IDs
+        role_ids_set = {role for role in value}
+        if len(role_ids_set) != len(value):
+            raise serializers.ValidationError("Duplicate role IDs are not allowed.")
+        return value
 
 
 # class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
