@@ -12,7 +12,7 @@ def company_exists(pk):
     try:
         comp = company.objects.filter(company_id = pk)
     except company.DoesNotExist:
-        return Response ({"details" : "loan not found"}, status = status.HTTP_404_NOT_FOUND)
+        return Response ({"details" : "Company not found"}, status = status.HTTP_404_NOT_FOUND)
     return comp
 
 @api_view(('GET',))

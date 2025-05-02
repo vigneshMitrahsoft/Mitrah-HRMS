@@ -27,11 +27,11 @@ class get_serializer(serializers.Serializer):
     # role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
     date_of_joining = serializers.DateField(required = True)
     type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
-    role_ids = serializers.SerializerMethodField()
+    roles = serializers.SerializerMethodField()
 
-    def get_role_ids(self, obj):
-        """Fetch role names associated with the employee."""
-        return [{role.role.role_id: role.role.role_name} for role in employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")]
+    def get_roles(self, obj):
+        roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
+        return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
 class create_serializer(serializers.Serializer):
     company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
     first_name = serializers.CharField(required = True)
