@@ -25,7 +25,8 @@ app = ([
     path("auth/", include('auth.urls')),
     path("company/",include('company.urls')),
     path("shift/", include('shift.urls')), 
-    path("shifttype/", include('shifttype.urls')), 
+    path("shifttype/", include('shifttype.urls')),
+    path("leave/", include('leave.urls')),
 ])
 
 urlpatterns = [
