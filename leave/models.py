@@ -19,7 +19,7 @@ class employee_leave_balances(models.Model):
 
 class employee_applied_leave_days(models.Model):
     leave_days_id = models.AutoField(primary_key = True)
-    applied_leave_request_id  = models.ForeignKey(employee_applied_leaves, on_delete=models.DO_NOTHING, related_name = 'applied_leave_request_id')
+    applied_leave_request_id  = models.ForeignKey(employee_applied_leaves, on_delete=models.DO_NOTHING, related_name ='leave_days')
     leave_date = models.DateField()
     session = models.CharField(max_length = 100)
     comment = models.CharField (max_length = 200)

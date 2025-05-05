@@ -1,6 +1,6 @@
 from rest_framework import  serializers
 from employee.models import employee
-from .models import employee_leave_balances
+from .models import employee_leave_balances, employee_applied_leave_days
 from attendance.models import employee_applied_leaves
 
 class create_leavebalance_serializer(serializers.Serializer):
@@ -15,24 +15,116 @@ class get_leavebalance_serializer(serializers.ModelSerializer):
 	class Meta:
 		model = employee_leave_balances
 		fields = "__all__"
-		
+
+class create_employee_applied_leaves_days(serializers.Serializer):
+	# applied_leave_request_id = serializers.PrimaryKeyRelatedField(queryset=employee_applied_leaves.objects.all(), required=True)
+	leave_date = serializers.DateField(required = True)
+	session = serializers.CharField(required = True)
+	comment = serializers.CharField(required = True)
+	status = serializers.CharField(default = "Pending")
+
 class create_employee_applied_leaves(serializers.Serializer):
-	employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
+	# employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
 	start_date = serializers.DateField(required = True)
 	end_date = serializers.DateField(required = True)
 	leave_type = serializers.CharField(required = True)
 	reason = serializers.CharField(required = True)
 	status = serializers.CharField(required = True)
-
+	sessions = create_employee_applied_leaves_days(many=True)
+	sick_leave = serializers.SerializerMethodField()
+	casual_leave = serializers.SerializerMethodField()
 	def validate(self, data):
+		error = {}
 		if data['start_date'] > data['end_date']: 
-			raise serializers.ValidationError( "End date should be greater than start date")
+			# raise serializers.ValidationError( "End date should be greater than start date")
+			error['date_error'] = "End date should be greater than start date"
+		
+		check_dates =[]
+		sick_leave = 0
+		casual_leave = 0
+		for session_data in data['sessions']:
+			if not (data['start_date'] <= session_data['leave_date'] <= data['end_date']):
+				error['session_data_error'] = "Leave date should be between start date and end date"
+			
+			elif session_data['leave_date'] in check_dates:
+				error['session_data_error'] = "Leave date should be unique"
+			else:
+				check_dates.append(session_data['leave_date'])
+				if session_data['session'] == "Morning" or session_data['session'] == "Evening":
+					if data ['leave_type'] == "Sick Leave":
+						sick_leave += 0.5
+					elif data ['leave_type'] == "Casual Leave":
+						casual_leave += 0.5
+				elif session_data['session'] == "Full Day":
+					if data ['leave_type'] == "Sick Leave":
+						sick_leave += 1
+					elif data ['leave_type'] == "Casual Leave":
+						casual_leave += 1
+		
+		self._calculated_sick_leave = sick_leave
+		self._calculated_casual_leave = casual_leave
 
+		if error:
+			raise serializers.ValidationError(error)
+		
 		return data
 
-class create_employee_applied_leaves_days(serializers.Serializer):
-	applied_leave_request_id = serializers.PrimaryKeyRelatedField(queryset=employee_applied_leaves.objects.all(), required=True)
-	leave_date = serializers.DateField(required = True)
-	session = serializers.CharField(required = True)
-	comment = serializers.CharField(required = True)
+	def get_sick_leave(self, obj):
+		return getattr(self, '_calculated_sick_leave', 0)
+		
+	
+	def get_casual_leave(self, obj):
+		return getattr(self, '_calculated_casual_leave', 0)
+	
+	def update(self, instance, validated_data):
+
+		sessions_data = validated_data.pop('sessions', [])
+		for attr, value in validated_data.items():
+			setattr(instance, attr, value)
+		instance.save()
+
+		existing_leave_days = instance.leave_days.all()
+		existing_leave_dates = [session['leave_date'] for session in sessions_data]  
+		for leave_day in existing_leave_days:
+			if leave_day.leave_date not in existing_leave_dates:
+				leave_day.status = 'Cancelled'  
+				leave_day.save()
+		for session_data in sessions_data:
+			leave_day = instance.leave_days.filter(leave_date=session_data['leave_date'], session=session_data['session'], status = 'Pending').first()
+			leave_day_diff_session = instance.leave_days.filter(leave_date=session_data['leave_date'] , status = 'Pending').first()
+			if leave_day:
+				leave_day.comment = session_data['comment']
+				leave_day.status = "Pending"
+				leave_day.save()
+			
+			elif leave_day_diff_session:
+				leave_day_diff_session.comment = session_data['comment']
+				leave_day_diff_session.session = session_data['session']
+				leave_day_diff_session.save()
+
+			else:
+				employee_applied_leave_days.objects.create(
+					applied_leave_request_id=instance,  
+					leave_date=session_data['leave_date'],
+					session=session_data['session'],
+					comment=session_data['comment'],
+					status='Pending' 
+				)
+
+		return instance
+
+
+		
+class get_employee_apllied_leaves(serializers.ModelSerializer):
+
+	class Meta:
+		model = employee_applied_leaves
+		fields ='__all__'
+
+class get_employee_applied_leave(serializers.Serializer):
+	start_date = serializers.DateField(required = True)
+	end_date = serializers.DateField(required = True)
+	leave_type = serializers.CharField(required = True)
+	reason = serializers.CharField(required = True)
 	status = serializers.CharField(required = True)
+	sessions = create_employee_applied_leaves_days(many=True)
