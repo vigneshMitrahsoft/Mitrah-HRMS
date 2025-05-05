@@ -1,0 +1,10 @@
+from django.urls import path,include
+from . import api
+
+urlpatterns = [
+	path("", api.overtime_list, name="overtime_list"),
+	path("<int:pk>/", api.overtime_detail, name="overtime_detail"),
+	path("create", api.overtime_create, name="overtime_create"),
+	path("delete/<int:pk>/", api.overtime_delete, name="overtime_delete"),
+]
+
