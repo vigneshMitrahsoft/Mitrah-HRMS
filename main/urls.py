@@ -22,7 +22,12 @@ app = ([
     path('employees/', include('employee.urls')),
     path('loans/', include('loan.urls')),
     path("attendance/", include('attendance.urls')),
-    path("holiday/", include('holiday.urls')),
+    path("auth/", include('auth.urls')),
+    path("company/",include('company.urls')),
+    path("shift/", include('shift.urls')), 
+    path("shifttype/", include('shifttype.urls')),
+    path("leave/", include('leave.urls')),
+    path("holiday/", include('holiday.urls'))
 ])
 
 urlpatterns = [

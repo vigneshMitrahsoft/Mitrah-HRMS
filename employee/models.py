@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
+from company.models import company
 
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -20,23 +21,12 @@ class EmployeeManager(BaseUserManager):
     def get_by_natural_key(self, email):
         return self.get(email=email)
 
-class company(models.Model):
-    company_id = models.BigAutoField(primary_key=True)
-    company_name = models.CharField(max_length=100)
-    address = models.CharField(max_length=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.CharField(max_length=100)
-
-    class Meta:
-        db_table = 'company'
-
-class employee_role(models.Model):
+class roles(models.Model):
     role_id = models.BigAutoField(primary_key=True)
     role_name = models.CharField(max_length=100)
     
     class Meta:
-        db_table = 'employee_role'
+        db_table = 'roles'
 
 class employee_type(models.Model):
     type_id = models.BigAutoField(primary_key=True)
@@ -54,7 +44,7 @@ class employee(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=100,default=None)
     date_of_birth = models.DateField()
     address = models.CharField(max_length=100)
-    role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid')
+    # role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid')
     date_of_joining = models.DateField()
     type_id = models.ForeignKey(employee_type, on_delete=models.DO_NOTHING, related_name = 'employee_typeid')
     employee_last_date = models.DateTimeField(default=None,null=True)
@@ -77,9 +67,15 @@ class employee(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'employee'
 
-# class EmployeeAttendance(models.Model):
-#     attendance_id = models.BigAutoField(primary_key=True)
-#     employee_id = models.ForeignKey(Employee, on_delete=models.DO_NOTHING, related_name = 'EmployeeAttendance')
-#     date = models.DateField()
+class employee_roles(models.Model):
+    employee = models.ForeignKey('employee', on_delete=models.CASCADE)
+    role = models.ForeignKey('roles', on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(null=True)
+    updated_by = models.IntegerField(null=True)
 
-
+    class Meta:
+        db_table = 'employee_roles'
+        unique_together = ('employee', 'role')
