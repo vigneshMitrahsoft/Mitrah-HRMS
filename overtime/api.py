@@ -4,7 +4,7 @@ from rest_framework import status
 
 from employee.models import employee
 from .models import Overtime
-from .serializer import overtimeSerializer, createOvertimeSerializer
+from .serializer import overtimeSerializer, createOvertimeSerializer, updateOvertimeSerializer
 from rest_framework.exceptions import APIException
 
 def check_overtime_exists(pk):
@@ -39,16 +39,16 @@ def overtime_create(request):
 		return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Overtime created successfully"}, status = status.HTTP_201_CREATED)
 	return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
 
-# @api_view(['PATCH'])
-# def overtime_update(request, pk):
-#     overtime = check_overtime_exists(pk)  # Check if overtime exists
-#     serializer = overtimeSerializer(overtime, data=request.data, partial=True)  # partial=True allows partial updates
-    
-#     if serializer.is_valid():
-#         serializer.save()  # Save the updated overtime object
-#         return Response({"statuscode": status.HTTP_200_OK,"status": "success","message": "Overtime updated successfully","data": serializer.data}, status=status.HTTP_200_OK)
-#     else:
-#         return Response({"statuscode": status.HTTP_400_BAD_REQUEST,"status": "error","message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['PATCH'])
+def overtime_update(request, pk):
+	overtime = check_overtime_exists(pk) 
+	serializer = updateOvertimeSerializer(overtime, data=request.data, partial=True) 
+	if serializer.is_valid():
+		Overtime.objects.filter(id = pk).update(**serializer.validated_data, updated_by = 1) #request.data.get('employee_id')
+		return Response({"statuscode": status.HTTP_200_OK,"status": "success","message": "Overtime updated successfully","data": serializer.data}, status=status.HTTP_200_OK)
+	else:
+		return Response({"statuscode": status.HTTP_400_BAD_REQUEST,"status": "error","message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['DELETE'])
 def overtime_delete(request, pk):

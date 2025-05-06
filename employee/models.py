@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
-from company.models import *
+from company.models import company
 
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -20,7 +20,6 @@ class EmployeeManager(BaseUserManager):
 
     def get_by_natural_key(self, email):
         return self.get(email=email)
-
 
 class roles(models.Model):
     role_id = models.BigAutoField(primary_key=True)
@@ -68,11 +67,6 @@ class employee(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'employee'
 
-# class EmployeeAttendance(models.Model):
-#     attendance_id = models.BigAutoField(primary_key=True)
-#     employee_id = models.ForeignKey(Employee, on_delete=models.DO_NOTHING, related_name = 'EmployeeAttendance')
-#     date = models.DateField()
-
 class employee_roles(models.Model):
     employee = models.ForeignKey('employee', on_delete=models.CASCADE)
     role = models.ForeignKey('roles', on_delete=models.CASCADE)
@@ -85,4 +79,3 @@ class employee_roles(models.Model):
     class Meta:
         db_table = 'employee_roles'
         unique_together = ('employee', 'role')
-
