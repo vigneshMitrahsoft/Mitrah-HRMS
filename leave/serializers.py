@@ -3,13 +3,10 @@ from employee.models import employee
 from .models import employee_leave_balances, employee_applied_leave_days
 from attendance.models import employee_applied_leaves
 
-class create_leavebalance_serializer(serializers.Serializer):
-	employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
-	sick_leave = serializers.FloatField(required = True)
-	casual_leave = serializers.FloatField(required = True)
-	permissions = serializers.FloatField(required = True)
-	compensation_leave = serializers.FloatField(required = True)
-
+class create_leavebalance_serializer(serializers.ModelSerializer):
+	class Meta:
+		model = employee_leave_balances
+		fields = "__all__"
 class get_leavebalance_serializer(serializers.ModelSerializer):
 	
 	class Meta:

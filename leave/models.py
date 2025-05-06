@@ -9,6 +9,7 @@ class employee_leave_balances(models.Model):
 	casual_leave = models.FloatField(default=0)
 	permissions = models.FloatField(default=0)
 	compensation_leave = models.FloatField(default=0)
+	overtime_balance_hours = models.FloatField(default=0, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
 	created_by = models.IntegerField(null=True)
