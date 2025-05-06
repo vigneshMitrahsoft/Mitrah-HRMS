@@ -98,10 +98,14 @@ def apply_employee_leaves(request):
 					status=session_data['status']
 				) for  session_data in data['sessions']
 			])
-			if serializer['sick_leave'].value > 0 :   #for testing purpose
-				employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - serializer['sick_leave'].value
-			if serializer['casual_leave'].value > 0 :
-				employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - serializer['casual_leave'].value
+			if employee_leave_info['leave_type'] == 'Sick Leave':
+				employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - Total_days
+			else:
+				employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - Total_days
+			# if serializer['sick_leave'].value > 0 :   #for testing purpose
+			# 	employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - serializer['sick_leave'].value
+			# if serializer['casual_leave'].value > 0 :
+			# 	employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - serializer['casual_leave'].value
 			employee_leave_balance.save()
 			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Leave applied successfully"},status=status.HTTP_201_CREATED)
 

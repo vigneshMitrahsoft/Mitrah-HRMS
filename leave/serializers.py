@@ -31,8 +31,6 @@ class create_employee_applied_leaves(serializers.Serializer):
 	reason = serializers.CharField(required = True)
 	status = serializers.CharField(required = True)
 	sessions = create_employee_applied_leaves_days(many=True)
-	sick_leave = serializers.SerializerMethodField()
-	casual_leave = serializers.SerializerMethodField()
 	def validate(self, data):
 		error = {}
 		if data['start_date'] > data['end_date']: 
@@ -50,32 +48,13 @@ class create_employee_applied_leaves(serializers.Serializer):
 				error['session_data_error'] = "Leave date should be unique"
 			else:
 				check_dates.append(session_data['leave_date'])
-				if session_data['session'] == "Morning" or session_data['session'] == "Evening":
-					if data ['leave_type'] == "Sick Leave":
-						sick_leave += 0.5
-					elif data ['leave_type'] == "Casual Leave":
-						casual_leave += 0.5
-				elif session_data['session'] == "Full Day":
-					if data ['leave_type'] == "Sick Leave":
-						sick_leave += 1
-					elif data ['leave_type'] == "Casual Leave":
-						casual_leave += 1
-		
-		self._calculated_sick_leave = sick_leave
-		self._calculated_casual_leave = casual_leave
+				
 
 		if error:
 			raise serializers.ValidationError(error)
 		
 		return data
 
-	def get_sick_leave(self, obj):
-		return getattr(self, '_calculated_sick_leave', 0)
-		
-	
-	def get_casual_leave(self, obj):
-		return getattr(self, '_calculated_casual_leave', 0)
-	
 	def update(self, instance, validated_data):
 
 		sessions_data = validated_data.pop('sessions', [])
