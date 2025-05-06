@@ -24,7 +24,7 @@ class create_employee_applied_leaves_days(serializers.Serializer):
 	status = serializers.CharField(default = "Pending")
 
 class create_employee_applied_leaves(serializers.Serializer):
-	# employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
+	employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
 	start_date = serializers.DateField(required = True)
 	end_date = serializers.DateField(required = True)
 	leave_type = serializers.CharField(required = True)
