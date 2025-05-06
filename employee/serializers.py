@@ -1,4 +1,4 @@
-from .models import *
+from .models import company,employee, employee_role,employee_type
 from rest_framework import  serializers
 # from django.contrib.auth.hashers import make_password
 # from rest_framework_simplejwt.serializers import TokenObtainPairSerializer,TokenRefreshSerializer

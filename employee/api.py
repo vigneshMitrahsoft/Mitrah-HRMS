@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
-from .serializers import *
+from .serializers import employee,get_serializer,create_serializer,employee_serializer
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -54,7 +54,7 @@ def get_employee(request,id):
     return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
-@permission_classes([IsAuthenticated])
+@permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr']) 
 def get_employees(request):
     data = employee.objects.filter(is_active=True)
@@ -160,8 +160,3 @@ def login(request):
     else:   
         return Response({"message": "Invalid credentials"}, status=401)
 
-
-
-
-        
-    

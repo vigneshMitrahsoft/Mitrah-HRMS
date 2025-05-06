@@ -21,7 +21,6 @@ class EmployeeManager(BaseUserManager):
     def get_by_natural_key(self, email):
         return self.get(email=email)
 
-
 class roles(models.Model):
     role_id = models.BigAutoField(primary_key=True)
     role_name = models.CharField(max_length=100)
@@ -68,11 +67,6 @@ class employee(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'employee'
 
-# class EmployeeAttendance(models.Model):
-#     attendance_id = models.BigAutoField(primary_key=True)
-#     employee_id = models.ForeignKey(Employee, on_delete=models.DO_NOTHING, related_name = 'EmployeeAttendance')
-#     date = models.DateField()
-
 class employee_roles(models.Model):
     employee = models.ForeignKey('employee', on_delete=models.CASCADE)
     role = models.ForeignKey('roles', on_delete=models.CASCADE)
@@ -85,4 +79,3 @@ class employee_roles(models.Model):
     class Meta:
         db_table = 'employee_roles'
         unique_together = ('employee', 'role')
-
