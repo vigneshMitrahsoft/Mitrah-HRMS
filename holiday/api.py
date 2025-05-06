@@ -69,13 +69,7 @@ def index(request):
         return Response({"statuscode": 200,"status": "success","created": created,"updated": updated}, status=200)
         
     except Exception as e:
-        error_message = (
-            type(e).__name__,          # TypeError
-            __file__,                  # /tmp/example.py
-            e.__traceback__.tb_lineno,  # line number
-            str(e)
-        )
-        return Response({"status": "error", "message": error_message}, status=500)
+        return Response({"status": "error", "message": str(e)}, status=500)
 
 @api_view(['POST'])
 def create_holiday(request):
@@ -87,13 +81,7 @@ def create_holiday(request):
             return Response({"statuscode":status.HTTP_201_CREATED,"status":"success",'message':f'{serializer.data['occasion']} Holiday stored'},status=status.HTTP_201_CREATED)
         
     except Exception as e:
-        error_message = (
-            type(e).__name__,          # TypeError
-            __file__,                  # /tmp/example.py
-            e.__traceback__.tb_lineno,  # line number
-            str(e)
-        )
-        return Response({"status":"error","message" : error_message}, status = 500)
+        return Response({"status":"error","message" : str(e)}, status = 500)
     return Response({"status":"error","message":serializer.errors}, status = 400)
 
 @api_view(['PATCH'])
