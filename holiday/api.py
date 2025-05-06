@@ -94,9 +94,7 @@ def update_holiday(request,id):
     serializer = HolidayUpdateSerializer(holiday_obj,data = request.data, partial = True)
     
     if serializer.is_valid():
-        print('inside serializer')
         holiday.objects.filter(holiday_id = id).update(**serializer.validated_data)        
-        print(serializer)
         return Response({"statuscode":status.HTTP_200_OK,"status": "success", "message": "Holiday updated successfully","data" : serializer.data}, status=200)
     return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
