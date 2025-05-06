@@ -1,9 +1,9 @@
-from .models import employee
+from .models import employee,employee_roles,roles
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
-from .serializers import employee,get_serializer,create_serializer,employee_serializer
+from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -74,7 +74,7 @@ def create_employee(request):
         if role_ids:
             create_employee = employee.objects.create(**data, created_by = 1, updated_by = 1)
         for role in role_ids:
-            empl cts.create(employee_id = create_employee.employee_id, role_id = role.role_id)
+            employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
         return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
     else:
         print('errors', serializer.errors)
