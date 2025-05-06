@@ -5,12 +5,12 @@ from django.db import models
 class Overtime(models.Model):
 	employee_id = models.ForeignKey("employee.Employee", on_delete=models.CASCADE, related_name="overtime")
 	project_name = models.CharField(max_length=100)
-	start_date = models.DateTimeField(blank= True, null=True)
-	end_date = models.DateTimeField(blank= True, null=True)
-	requested_hours = models.FloatField(blank=True, null=True)
+	date = models.DateField(blank=True, null=True)
+	start_time = models.TimeField(blank=True, null=True)
+	end_time = models.TimeField(blank=True, null=True)
+	#requested_hours - it will be the virtual field which will be calculated based on the start time and end time
 	credicted_hours = models.FloatField(blank=True, null=True)
 	status = models.CharField(max_length=50, blank=True, default= 'Pending')
-	action = models.CharField(max_length=50, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	created_by = models.CharField(max_length=50, blank=True, null=True)
 	updated_at = models.DateTimeField(auto_now=True,blank=True, null=True)

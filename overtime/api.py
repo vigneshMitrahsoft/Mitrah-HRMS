@@ -16,8 +16,7 @@ def check_overtime_exists(pk):
 
 @api_view(('GET',))
 def overtime_list(request):
-	print("isnide the overtime list")
-	overtime = Overtime.objects.all()
+	overtime = Overtime.objects.filter(is_deleted = False)
 	serializer = overtimeSerializer(overtime, many=True)
 	return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
@@ -40,12 +39,20 @@ def overtime_create(request):
 		return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Overtime created successfully"}, status = status.HTTP_201_CREATED)
 	return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
 
+# @api_view(['PATCH'])
+# def overtime_update(request, pk):
+#     overtime = check_overtime_exists(pk)  # Check if overtime exists
+#     serializer = overtimeSerializer(overtime, data=request.data, partial=True)  # partial=True allows partial updates
+    
+#     if serializer.is_valid():
+#         serializer.save()  # Save the updated overtime object
+#         return Response({"statuscode": status.HTTP_200_OK,"status": "success","message": "Overtime updated successfully","data": serializer.data}, status=status.HTTP_200_OK)
+#     else:
+#         return Response({"statuscode": status.HTTP_400_BAD_REQUEST,"status": "error","message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(('DELETE',))
+@api_view(['DELETE'])
 def overtime_delete(request, pk):
-	print("inside the delete function")
 	overtime = check_overtime_exists(pk)
-	print("overtime", overtime)
 	if overtime.is_deleted == True:
 		return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Overtime already deleted"}, status = status.HTTP_400_BAD_REQUEST)
 	overtime.is_deleted = True
