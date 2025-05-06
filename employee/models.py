@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
-from company.models import *
+from company.models import company
 
 class EmployeeManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):

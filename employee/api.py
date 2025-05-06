@@ -1,4 +1,4 @@
-from .models import *
+from .models import employee
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
@@ -72,9 +72,9 @@ def create_employee(request):
             data['password'] = hashed_password 
         role_ids = data.pop('role_ids')
         if role_ids:
-            create_employee = employee.objects.create(**data, created_by =1, updated_by =1)
+            create_employee = employee.objects.create(**data, created_by = 1, updated_by = 1)
         for role in role_ids:
-            employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
+            empl cts.create(employee_id = create_employee.employee_id, role_id = role.role_id)
         return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
     else:
         print('errors', serializer.errors)

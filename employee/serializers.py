@@ -1,9 +1,9 @@
 from .models import *
 from rest_framework import  serializers
-from django.contrib.auth.hashers import make_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer,TokenRefreshSerializer
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework import status
+# from django.contrib.auth.hashers import make_password
+# from rest_framework_simplejwt.serializers import TokenObtainPairSerializer,TokenRefreshSerializer
+# from rest_framework.exceptions import AuthenticationFailed
+# from rest_framework import status
 
 class company_serializer(serializers.ModelSerializer):
     class Meta:
