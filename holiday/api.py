@@ -21,7 +21,6 @@ def index(request):
         columns = next(data)  # First row as column names
         
         df = pd.DataFrame(data, columns=columns)
-        print(df)
         df.columns = [col.strip().lower() for col in df.columns]
         required_columns = ['holiday date', 'occasion', 'leave type']
         for col in required_columns:
@@ -46,10 +45,8 @@ def index(request):
         created, updated = [], []
         for _, row in df.iterrows():
                 date = row['holiday_date'].date()
-                print(date)
                 occasion = str(row['occasion']).strip()
                 leave_type = str(row['leave_type']).strip()
-                print(date, occasion, leave_type)
                 #, is_created
                 holiday_obj, is_created = Holiday.objects.update_or_create(                                                                
                         holiday_date=date,
@@ -101,7 +98,6 @@ def create_holiday(request):
 
 @api_view(['PATCH'])
 def update_holiday(request,id):
-    print("holiday_id",id)
     try:
         holiday_obj = Holiday.objects.get(holiday_id = id)
     except Holiday.DoesNotExist:
