@@ -49,9 +49,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist", # Required for token blacklisting
     "leave",  
-    'holiday',
-    'rest_framework',
-    "rest_framework_simplejwt"
+    'holiday'
 ]
 
 MIDDLEWARE = [
