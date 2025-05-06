@@ -36,7 +36,7 @@ def check_in_entry(request):
     current_date_time = datetime.now()
     try:
         today_entry = employee_attendance.objects.get(employee_id = employee_id, date = today)
-        if today_entry.check_in is  None:
+        if today_entry.check_in is None:
             today_entry.check_in = current_date_time
             today_entry.save()
             data = {
@@ -88,6 +88,7 @@ def check_in_entry(request):
             }
             try:
                 #TODO: need to get the date filter after insert the values in the applied leaves
+                # need to add the present condition (In future)
                 check_applied_leave = employee_applied_leaves.objects.get(employee_id = employee_id, start_date = today)
                 leave_type = check_applied_leave.leave_type
                 if leave_type == "remote":

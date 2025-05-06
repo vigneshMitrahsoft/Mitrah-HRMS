@@ -2,12 +2,15 @@ from datetime import datetime, timedelta
 import string
 from rest_framework.exceptions import ValidationError
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import LoanDeduction, Repayment
 from .serializers import *
 from employee.models import employee
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import APIException
+from employee.api import IsAuthorized
 
 # class LoanList(APIView):
 #     def get(self,request):
@@ -53,7 +56,8 @@ def check_loan_exist(pk):
     try:
         loan = LoanDeduction.objects.get(loan_id = pk)
     except LoanDeduction.DoesNotExist:
-        return Response ({"details" : "loan not found"}, status = status.HTTP_404_NOT_FOUND)
+        raise APIException(detail={"statuscode": 404, "status": "error", "message": "Loan not found"})
+        # return None
     return loan
 
 # #TODO: function fro creating the repayments 
@@ -99,12 +103,15 @@ def check_loan_exist(pk):
 
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def loan_list(request):
     loan = LoanDeduction.objects.all()
     serializer = loanSerializer(loan, many = True)
     return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
 def loan_create(request):
     employee_id = 1  #request.employee.employee_id
     # employee_id = employee.objects.get(employee_id = 1)
@@ -117,7 +124,9 @@ def loan_create(request):
 @api_view(('GET',))
 def loan_detail_by_employee(request, pk):
     loan = check_loan_exist(pk)
+    print(loan, "loan from the detail view")
     serializer = loanSerializer(loan)
+    print(serializer.data, "serializer data")
     return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 
@@ -168,16 +177,15 @@ def request_acceptance(request, pk):
 
     return Response({"message" : serializer.errors, "status" : "error"}, status = status.HTTP_400_BAD_REQUEST)
 
-
-
-
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def repayment_list(request):
     repayment = Repayment.objects.all()
     serializer = repaymentSerializer(repayment, many = True)
     return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def repayment_detail(request, pk):
     repayment = Repayment.objects.filter(loan_id = pk)
     serializer = repaymentSerializer(repayment, many = True)
@@ -185,6 +193,7 @@ def repayment_detail(request, pk):
 
 #TODO: need to implement the creation of repayments     
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
 def repayment_create(request, pk):
     loan = check_loan_exist(pk)
     serializer = repaymentCreateSerializer(data = request.data)
