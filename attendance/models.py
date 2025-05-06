@@ -1,5 +1,5 @@
 from django.db import models
-from employee.models import *
+from employee.models import employee
 
 class employee_attendance(models.Model):
     attendance_id = models.BigAutoField(primary_key = True)
@@ -52,4 +52,3 @@ class employee_applied_leaves(models.Model):
 
     class Meta:
         db_table = 'employee_applied_leaves'
-
