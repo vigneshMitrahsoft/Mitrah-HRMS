@@ -1,6 +1,6 @@
 from django.db import models
 
-class Holiday(models.Model):
+class holiday(models.Model):
     holiday_id = models.AutoField(primary_key=True)
     occasion = models.CharField(max_length=100)
     leave_type = models.CharField(max_length=100)
