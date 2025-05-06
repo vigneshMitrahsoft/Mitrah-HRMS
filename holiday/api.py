@@ -74,7 +74,7 @@ def index(request):
 @api_view(['POST'])
 def create_holiday(request):
     try:
-        serializer = HolidayCreateSerializer(data = request.data)
+        serializer = holidayCreateSerializer(data = request.data)
         if serializer.is_valid():
             data = serializer.validated_data            
             holiday.objects.create(**data)
@@ -91,7 +91,7 @@ def update_holiday(request, id):
     except holiday.DoesNotExist:
         return Response({"status": "error", "message": "Holiday not found"}, status = 404)
     
-    serializer = HolidayUpdateSerializer(holiday_obj, data = request.data, partial = True)
+    serializer = holidayUpdateSerializer(holiday_obj, data = request.data, partial = True)
     
     if serializer.is_valid():
         holiday.objects.filter(holiday_id = id).update(**serializer.validated_data)        
