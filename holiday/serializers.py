@@ -5,7 +5,11 @@ class holidaySerializer(serializers.ModelSerializer):
     class Meta:
         model = holiday
         fields = '__all__'
-        read_only_fields = ['holiday_id', 'created_at', 'updated_at']
+        read_only_fields = [
+						'holiday_id',
+						'created_at',
+						'updated_at'
+        ]
     
 class holidayCreateSerializer(serializers.Serializer):
     occasion = serializers.CharField(required = True)

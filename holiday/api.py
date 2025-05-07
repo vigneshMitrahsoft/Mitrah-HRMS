@@ -22,12 +22,16 @@ def index(request):
 		
 		df = pd.DataFrame(data, columns = columns)
 		df.columns = [col.strip().lower() for col in df.columns]
-		required_columns = ['holiday date', 'occasion', 'leave type']
+		required_columns = [
+      						'holiday date',
+            				'occasion',
+                			'leave type'
+        ]
 		for col in required_columns:
 				if col not in df.columns:
-						return Response({"statuscode" : status.HTTP_400_BAD_REQUEST,"status": "error", "message": f"Missing required column: {col}"}, status = status.HTTP_400_BAD_REQUEST)
+						return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status": "error", "message": f"Missing required column: {col}"}, status = status.HTTP_400_BAD_REQUEST)
 					
-		df = df.rename(columns={
+		df = df.rename(columns = {
 			'holiday date': 'holiday_date',
 			'occasion': 'occasion',
 			'leave type': 'leave_type'
@@ -37,7 +41,7 @@ def index(request):
 			try:
 				converted_date.append(pd.to_datetime(date_value, errors = 'raise'))
 			except ValueError:
-				return Response({"statuscode" : status.HTTP_400_BAD_REQUEST,"status": "error", "message": f"Invalid date format in at row : {index +2}, value : {date_value}"}, status = status.HTTP_400_BAD_REQUEST)
+				return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status": "error", "message": f"Invalid date format in at row : {index +2}, value : {date_value}"}, status = status.HTTP_400_BAD_REQUEST)
 		df['holiday_date'] = converted_date
 		df = df.dropna(subset = ['holiday_date'])
 		df = df.sort_values(by = 'holiday_date')
@@ -49,7 +53,7 @@ def index(request):
 				leave_type = str(row['leave_type']).strip()
 				#, is_created
 				holiday_obj, is_created = holiday.objects.update_or_create(
-						holiday_date=date,
+						holiday_date = date,
 						defaults={
 								'occasion': occasion,
 								'leave_type': leave_type
@@ -66,7 +70,7 @@ def index(request):
 				else:
 					updated.append(entry)
 
-		return Response({"statuscode": status.HTTP_200_OK, "status": "success","created": created,"updated": updated}, status = status.HTTP_200_OK)
+		return Response({"statuscode": status.HTTP_200_OK, "status": "success", "created": created,"updated": updated}, status = status.HTTP_200_OK)
 		
 	except Exception as e:
 		return Response({"statuscode": status.HTTP_500_INTERNAL_SERVER_ERROR, "status": "error", "message": str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -81,7 +85,7 @@ def create_holiday(request):
 			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success",'message' : f'{serializer.data['occasion']} Holiday stored'},status = status.HTTP_201_CREATED)
 		
 	except Exception as e:
-		return Response({"statuscode": status.HTTP_500_INTERNAL_SERVER_ERROR,"status" : "error", "message" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+		return Response({"statuscode": status.HTTP_500_INTERNAL_SERVER_ERROR, "status" : "error", "message" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
 	return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PATCH'])
@@ -103,8 +107,8 @@ def delete_holiday(request, id):
 	try:
 		holiday.objects.get(holiday_id = id)
 		# holiday_obj.delete()
-		return Response({"statuscode" : status.HTTP_200_OK,"status": "success", "message": "Holiday deleted successfully"}, status = status.HTTP_200_OK)
+		return Response({"statuscode" : status.HTTP_200_OK, "status": "success", "message": "Holiday deleted successfully"}, status = status.HTTP_200_OK)
 	except holiday.DoesNotExist:
-		return Response({"statuscode" : status.HTTP_404_NOT_FOUND,"status": "error", "message": "Holiday not found"}, status = status.HTTP_404_NOT_FOUND)
+		return Response({"statuscode" : status.HTTP_404_NOT_FOUND, "status": "error", "message": "Holiday not found"}, status = status.HTTP_404_NOT_FOUND)
 	except Exception as e:
-		return Response({"statuscode" : status.HTTP_500_INTERNAL_SERVER_ERROR,"status" : "error", "message" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+		return Response({"statuscode" : status.HTTP_500_INTERNAL_SERVER_ERROR, "status" : "error", "message" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
