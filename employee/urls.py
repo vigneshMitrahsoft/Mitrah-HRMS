@@ -13,6 +13,11 @@ urlpatterns = [
     path("update/<int:id>", api.update_employee),
     path("delete/<int:id>", api.delete_employee),
     path("login", api.login),
+	path("salary/create",api.create_employee_salary_info),
+	path("salary/update/<int:id>",api.update_employee_salary_info),
+	path("salary",api.get_employees_salary),
+	path("salary/<int:id>",api.get_employee_salary),
+	path("salary/calculate/<int:id>",api.calculate_employee_salary)
     # path("employees",views.get),
     # path("employee",views.insertEmployee),
     # path('addemployee',views.addEmployee),

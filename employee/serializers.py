@@ -1,4 +1,4 @@
-from .models import company,employee,employee_type,employee_roles,roles
+from .models import company,employee,employee_type,employee_roles,roles,employee_salary_info
 from rest_framework import  serializers
 # from django.contrib.auth.hashers import make_password
 # from rest_framework_simplejwt.serializers import TokenObtainPairSerializer,TokenRefreshSerializer
@@ -80,7 +80,10 @@ class update_serializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Duplicate role IDs are not allowed.")
         return value
 
-
+class create_salary_info_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = employee_salary_info
+        fields = "__all__"
 # class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 #     @classmethod
 #     def get_token(cls, user):
