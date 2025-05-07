@@ -82,7 +82,7 @@ def create_holiday(request):
 		if serializer.is_valid():
 			data = serializer.validated_data            
 			holiday.objects.create(**data)
-			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success",'message' : f'{serializer.data['occasion']} Holiday stored'},status = status.HTTP_201_CREATED)
+			# return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success",'message' : f'{serializer.data['occasion']} Holiday stored'},status = status.HTTP_201_CREATED)
 		
 	except Exception as e:
 		return Response({"statuscode": status.HTTP_500_INTERNAL_SERVER_ERROR, "status" : "error", "message" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
