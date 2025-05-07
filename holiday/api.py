@@ -23,10 +23,10 @@ def index(request):
 		df = pd.DataFrame(data, columns = columns)
 		df.columns = [col.strip().lower() for col in df.columns]
 		required_columns = [
-      						'holiday date',
-            				'occasion',
-                			'leave type'
-        ]
+			'holiday date',
+			'occasion',
+			'leave type',
+		]
 		for col in required_columns:
 				if col not in df.columns:
 						return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status": "error", "message": f"Missing required column: {col}"}, status = status.HTTP_400_BAD_REQUEST)

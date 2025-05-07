@@ -6,9 +6,9 @@ class holidaySerializer(serializers.ModelSerializer):
         model = holiday
         fields = '__all__'
         read_only_fields = [
-						'holiday_id',
-						'created_at',
-						'updated_at'
+			'holiday_id',
+			'created_at',
+			'updated_at'
         ]
     
 class holidayCreateSerializer(serializers.Serializer):
