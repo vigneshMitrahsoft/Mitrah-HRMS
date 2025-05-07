@@ -1,5 +1,6 @@
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
+from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +15,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.state import token_backend
 from leave.serializers import create_leavebalance_serializer
+from datetime import datetime,timedelta
+from dateutil.relativedelta import relativedelta
 
 def IsAuthorized(required_roles):
 	def decorator(view_func):
@@ -225,17 +228,52 @@ def get_employee_salary(request,id):
 def calculate_employee_salary(request,id):
 	pass
 	employee_instance = employee.objects.get(employee_id = id)
-	company_instance = company.objects.get(company_id = employee_instance.company_id.company_id)
+	# company_instance = company.objects.get(company_id = employee_instance.company_id.company_id)
 	employee_company = company_Settings.objects.get(company = employee_instance.company_id.company_id)
 	print("dfff-->",employee_company.employee_PF,employee_company.employee_ESI)
 	employee_salary = employee_salary_info.objects.get(employee_id = employee_instance)
-	print("emploee instance--->",employee_salary.gross_salary, employee_salary.variable_pay)
 	ctc = employee_salary.gross_salary + employee_salary.variable_pay
-	basic_pay = employee_salary.gross_salary*0.4
+	print(ctc,"ctc")
+	basic_pay = ctc*0.4
+	hra = ctc*0.2
+	other_allowance = ctc*0.4
+	print("hra-->",hra)
+	print("hra-->",other_allowance)
+	employee_pf = employee_company.employee_PF
+	employee_esi = employee_company.employee_ESI
 	print("basic pay-->",basic_pay)
-	employee_pf_deduction = (employee_company.employee_PF/100) * basic_pay
-	employee_ESI_deduction = (employee_company.employee_ESI/100)* employee_salary.gross_salary
-	print("employ--->",employee_pf_deduction,employee_ESI_deduction)
-	# basic_pay = 
+	employee_pf_deduction = (employee_pf/100) * basic_pay
+	employee_esi_deduction = (employee_esi/100)* employee_salary.gross_salary
+	print("employ--->",employee_pf_deduction,employee_esi_deduction)
+	
+	input_str = "07-05-2025"
+	given_date = datetime.strptime(input_str, "%d-%m-%Y").date()
+	start_date = given_date - relativedelta(months=1)
+	end_date = given_date
+	# total_days_of_month = (end_date - start_date).days
+	# print("total month--->",total_days_of_month)
+	weekday_count = 0
+	current_date = start_date
+	while current_date <= end_date:
+		if current_date.weekday() < 5: 
+			weekday_count += 1
+		current_date += timedelta(days=1)
+	print("weekend_count---->",weekday_count)
+	start_date = start_date.strftime("%Y-%m-%d")
+	end_date = end_date.strftime("%Y-%m-%d")
+
+	leave_dates = employees_attendance_info.objects.filter(date__range = [start_date,end_date],status = 'Absent')
+	holiday_leave = 2
+
+	total_working_day_of_month = weekday_count-holiday_leave
+	employee_working_day = total_working_day_of_month
+	employee_lop = (employee_salary.gross_salary / total_working_day_of_month)* 1.5
+	print("employee_lop-->",employee_lop)
+	deduction = employee_esi_deduction + employee_pf_deduction + employee_lop
+	print("ded-->",deduction)
+	net_salary = (basic_pay + hra + other_allowance) - deduction
+	print("net_salary--->",net_salary)
+
+
 
 
