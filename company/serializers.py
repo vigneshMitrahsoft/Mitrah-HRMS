@@ -20,6 +20,9 @@ class companyCreateSerializer(serializers.Serializer):
     basic_work_hours = serializers.FloatField()
     sick_leaves = serializers.FloatField()
     casual_leaves = serializers.FloatField()
+    basic_pay = serializers.FloatField()
+    other_allowances = serializers.FloatField()
+    permission_hours = serializers.TimeField()
 
 
 class companyUpdateSerializer(serializers.Serializer):
@@ -34,4 +37,7 @@ class companyUpdateSerializer(serializers.Serializer):
     basic_work_hours = serializers.FloatField()
     sick_leaves = serializers.FloatField()
     casual_leaves = serializers.FloatField()
+    basic_pay = serializers.FloatField()
+    other_allowances = serializers.FloatField()
+    permission_hours = serializers.TimeField()
 

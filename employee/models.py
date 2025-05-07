@@ -93,4 +93,3 @@ class employee_salary_info(models.Model):
 	
 	class Meta:
 		db_table = 'employee_salary_info'
-

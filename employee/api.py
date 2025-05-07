@@ -2,6 +2,7 @@ from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
 from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
+from holiday.models import holiday
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
@@ -24,17 +25,13 @@ def IsAuthorized(required_roles):
 			auth_header = request.headers.get("Authorization", None)
 			if not auth_header:
 				return Response({"detail": "Authorization token missing"}, status=status.HTTP_401_UNAUTHORIZED)
-
 			try:
 				token = auth_header.split(" ")[1] 
 				decoded_token = token_backend.decode(token)
 				employee_id = decoded_token.get("employee_id")
-
 				if not employee_id:
 					return Response({"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
-
 				employee_rolez = list(employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True))
-
 				if not employee_rolez:  
 					return Response({"detail": "Employee has no assigned roles"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -99,29 +96,23 @@ def create_employee(request):
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
 	else:
-		print('errors', serializer.errors)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
 def update_employee(request, id):
 	data = request.data
-	print(data, "data")
 
 	try:
 		employee_data = employee.objects.get(employee_id=id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
-
 	serializer = update_serializer(employee_data, data=data, partial=True)
-
 	if serializer.is_valid():
 		validated_data = serializer.validated_data
-		print(validated_data, "validated_data")
 		serializer.save()  
 
 		validated_role_ids = [role.role_id for role in validated_data.get('role_ids', [])]
-		print("Validated Role IDs: ", validated_role_ids)
 
 		current_roles = set(
 			employee_roles.objects.filter(employee_id=id, is_active=True).values_list('role_id', flat=True)
@@ -130,13 +121,11 @@ def update_employee(request, id):
 
 		roles_to_deactivate = current_roles - updated_roles
 		roles_to_activate_or_create = updated_roles - current_roles
-		print(roles_to_activate_or_create, "roles_to_activate_or_create")
 
 		if roles_to_deactivate:
 			employee_roles.objects.filter(employee_id=id, role_id__in=roles_to_deactivate).update(is_active=False)
 
 		for role_id in roles_to_activate_or_create:
-			print("Role ID: ", role_id)
 			try:
 				emp_role = employee_roles.objects.get(employee_id=id, role_id=role_id)
 				emp_role.is_active = True
@@ -188,11 +177,9 @@ def create_employee_salary_info(request):
 	serializer = create_salary_info_serializer(data = data)
 	if serializer.is_valid():
 		data = serializer.validated_data
-		print("data---->",data)
 		salary_info = employee_salary_info.objects.create(**data, created_by = 1, updated_by =1)
 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
 	else:
-		print("serfdf-->",serializer.errors)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
 @api_view(('PATCH',))
@@ -226,54 +213,38 @@ def get_employee_salary(request,id):
 
 @api_view(('GET',))
 def calculate_employee_salary(request,id):
-	pass
 	employee_instance = employee.objects.get(employee_id = id)
 	# company_instance = company.objects.get(company_id = employee_instance.company_id.company_id)
 	employee_company = company_Settings.objects.get(company = employee_instance.company_id.company_id)
-	print("dfff-->",employee_company.employee_PF,employee_company.employee_ESI)
 	employee_salary = employee_salary_info.objects.get(employee_id = employee_instance)
 	ctc = employee_salary.gross_salary + employee_salary.variable_pay
-	print(ctc,"ctc")
-	basic_pay = ctc*0.4
-	hra = ctc*0.2
-	other_allowance = ctc*0.4
-	print("hra-->",hra)
-	print("hra-->",other_allowance)
+	basic_pay = ctc*(employee_company.basic_pay / 100)
+	hra = ctc*(employee_company.HRA / 100)
+	other_allowance = ctc*(employee_company.other_allowances / 100)
 	employee_pf = employee_company.employee_PF
 	employee_esi = employee_company.employee_ESI
-	print("basic pay-->",basic_pay)
 	employee_pf_deduction = (employee_pf/100) * basic_pay
 	employee_esi_deduction = (employee_esi/100)* employee_salary.gross_salary
-	print("employ--->",employee_pf_deduction,employee_esi_deduction)
-	
-	input_str = "07-05-2025"
-	given_date = datetime.strptime(input_str, "%d-%m-%Y").date()
+	company_audit_date = "31"  #TODO: need to get the value from company_settings
+	today = datetime.today()
+	month = today.month
+	year = today.year
+	date = str(company_audit_date) + "-" + str(month) + "-" + str(year)
+	given_date = datetime.strptime(date, "%d-%m-%Y").date()
 	start_date = given_date - relativedelta(months=1)
 	end_date = given_date
-	# total_days_of_month = (end_date - start_date).days
-	# print("total month--->",total_days_of_month)
 	weekday_count = 0
 	current_date = start_date
 	while current_date <= end_date:
 		if current_date.weekday() < 5: 
 			weekday_count += 1
 		current_date += timedelta(days=1)
-	print("weekend_count---->",weekday_count)
 	start_date = start_date.strftime("%Y-%m-%d")
 	end_date = end_date.strftime("%Y-%m-%d")
-
 	leave_dates = employees_attendance_info.objects.filter(date__range = [start_date,end_date],status = 'Absent')
-	holiday_leave = 2
-
-	total_working_day_of_month = weekday_count-holiday_leave
+	company_holidays = holiday.objects.filter(holiday_date__range = [start_date, end_date])
+	total_working_day_of_month = weekday_count - len(company_holidays)
 	employee_working_day = total_working_day_of_month
-	employee_lop = (employee_salary.gross_salary / total_working_day_of_month)* 1.5
-	print("employee_lop-->",employee_lop)
+	employee_lop = (employee_salary.gross_salary / total_working_day_of_month) * len(leave_dates)
 	deduction = employee_esi_deduction + employee_pf_deduction + employee_lop
-	print("ded-->",deduction)
 	net_salary = (basic_pay + hra + other_allowance) - deduction
-	print("net_salary--->",net_salary)
-
-
-
-

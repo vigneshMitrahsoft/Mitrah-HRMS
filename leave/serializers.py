@@ -1,7 +1,6 @@
 from rest_framework import  serializers
 from employee.models import employee
-from .models import employee_leave_balances, employee_applied_leave_days
-from attendance.models import employee_applied_leaves
+from .models import employee_leave_balances, employee_applied_leave_days, employee_applied_leaves,employee_applied_permissions
 
 class create_leavebalance_serializer(serializers.Serializer):
 	employee_id = serializers.PrimaryKeyRelatedField(queryset=employee.objects.all(), required=True)
@@ -91,8 +90,6 @@ class create_employee_applied_leaves(serializers.Serializer):
 				)
 
 		return instance
-
-
 		
 class get_employee_apllied_leaves(serializers.ModelSerializer):
 
@@ -107,3 +104,14 @@ class get_employee_applied_leave(serializers.Serializer):
 	reason = serializers.CharField(required = True)
 	status = serializers.CharField(required = True)
 	sessions = create_employee_applied_leaves_days(many=True)
+
+class create_applied_permission(serializers.ModelSerializer):
+
+	class Meta:
+		model = employee_applied_permissions
+		fields = "__all__"
+
+	def validate(self, data):
+		if data['end_time'] < data['start_time']:
+			raise serializers.ValidationError("enddate must be greater than start date")
+		return data

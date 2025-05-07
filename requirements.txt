@@ -2,4 +2,6 @@ django
 psycopg2
 djangorestframework
 djangorestframework-simplejwt
+pandas
+openpyxl
 python-dateutil
