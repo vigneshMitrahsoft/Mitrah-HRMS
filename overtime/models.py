@@ -9,7 +9,7 @@ class Overtime(models.Model):
 	start_time = models.TimeField(blank=True, null=True)
 	end_time = models.TimeField(blank=True, null=True)
 	#requested_hours - it will be the virtual field which will be calculated based on the start time and end time
-	credicted_hours = models.FloatField(blank=True, null=True)
+	credited_hours = models.FloatField(blank=True, null=True)
 	status = models.CharField(max_length=50, blank=True, default= 'Pending')
 	created_at = models.DateTimeField(auto_now_add=True)
 	created_by = models.CharField(max_length=50, blank=True, null=True)

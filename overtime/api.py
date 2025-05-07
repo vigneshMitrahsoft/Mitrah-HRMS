@@ -20,6 +20,13 @@ def check_overtime_exists(pk):
 		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Overtime not found"})
 	return overtime
 
+def check_employee_exists(employee_id):
+	try:
+		employee_instance = employee.objects.get(employee_id = employee_id, is_active = True)
+	except employee.DoesNotExist:
+		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Employee not found"})
+	return employee_instance
+
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 def overtime_list(request):
@@ -39,10 +46,7 @@ def overtime_detail(request,pk):
 def overtime_create(request):
 	print(request.data,"request data here")
 	employee_id = request.user.employee_id
-	try:
-		employe = employee.objects.get(employee_id = employee_id) 
-	except employee.DoesNotExist:
-		return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Employee not found"}, status = status.HTTP_400_BAD_REQUEST)
+	employe = check_employee_exists(employee_id)
 	serializer = createOvertimeSerializer(data = request.data, context = {'employee' : employe})
 	if serializer.is_valid():
 		Overtime.objects.create(**serializer.validated_data, employee_id = employe, created_by = employe.employee_id)
@@ -53,8 +57,9 @@ def overtime_create(request):
 @permission_classes((IsAuthenticated,))
 def overtime_update(request, pk):
 	employee_id = request.user.employee_id
+	employe = check_employee_exists(employee_id)
 	overtime = check_overtime_exists(pk) 
-	serializer = updateOvertimeSerializer(overtime, data = request.data, partial = True) 
+	serializer = updateOvertimeSerializer(overtime, data = request.data, partial = True, context = {'employee' : employe}) 
 	if serializer.is_valid():
 		Overtime.objects.filter(id = pk).update(**serializer.validated_data, updated_by = employee_id, updated_at = datetime.datetime.now()) 
 		return Response({"statuscode": status.HTTP_200_OK,"status": "success","message": "Overtime updated successfully",}, status = status.HTTP_200_OK)
@@ -65,6 +70,7 @@ def overtime_update(request, pk):
 @permission_classes((IsAuthenticated,))
 def overtime_acceptance(request, pk):
 	employee_id = request.user.employee_id
+	employe = check_employee_exists(employee_id)
 	overtime = check_overtime_exists(pk)
 	serializer = overtimeStatusUpdateSerializer(overtime, data = request.data, partial = True)
 	if serializer.is_valid():
@@ -84,26 +90,26 @@ def overtime_acceptance(request, pk):
 
 			if not company_setting_instance:
 				return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Company settings not found"}, status = status.HTTP_400_BAD_REQUEST)
-			credicted_hrs = company_setting_instance.leave_compensation * requested_hours
-			Overtime.objects.filter(id = pk).update(status = "Accepted", credicted_hours = credicted_hrs, updated_by = employee_id, updated_at = datetime.datetime.now()) #request.data.get('employee_id')
+			credited_hrs = company_setting_instance.leave_compensation * requested_hours
+			Overtime.objects.filter(id = pk).update(status = "Accepted", credited_hours = credited_hrs, updated_by = employe.employee_id, updated_at = datetime.datetime.now()) #request.data.get('employee_id')
 			leave_balance_instance = employee_leave_balances.objects.filter(employee_id = employee_instance).first()
 
 			if leave_balance_instance.overtime_balance_hours is None:
 				leave_balance_instance.overtime_balance_hours = 0.0
-			if credicted_hrs >= 8:
+			if credited_hrs >= 8:
 				leave_balance_instance.compensation_leave += 1
-				remaining_hours = credicted_hrs - 8
+				remaining_hours = credited_hrs - 8
 				leave_balance_instance.overtime_balance_hours += remaining_hours
-			elif credicted_hrs >= 4:
+			elif credited_hrs >= 4:
 				leave_balance_instance.compensation_leave += 0.5
-				remaining_hours = credicted_hrs - 4
+				remaining_hours = credited_hrs - 4
 				leave_balance_instance.overtime_balance_hours += remaining_hours
 			else:
-				leave_balance_instance.overtime_balance_hours += credicted_hrs
+				leave_balance_instance.overtime_balance_hours += credited_hrs
 			leave_balance_instance.save()
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Overtime accepted successfully"}, status = status.HTTP_200_OK)
 		if dataz['status'] == 'Rejected':
-			Overtime.objects.filter(id = pk).update(status = "Rejected", updated_by = 1, updated_at = datetime.datetime.now())	
+			Overtime.objects.filter(id = pk).update(status = "Rejected", updated_by = employe.employee_id, updated_at = datetime.datetime.now())	
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Overtime rejected successfully"}, status = status.HTTP_200_OK)
 	return Response({"message" : serializer.errors, "status" : "error"}, status = status.HTTP_400_BAD_REQUEST)
 	
@@ -111,11 +117,13 @@ def overtime_acceptance(request, pk):
 @api_view(['DELETE'])
 @permission_classes((IsAuthenticated,))
 def overtime_delete(request, pk):
+	employee_id = request.user.employee_id
+	employe = check_employee_exists(employee_id)
 	overtime = check_overtime_exists(pk)
 	if overtime.is_deleted == True:
 		return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Overtime already deleted"}, status = status.HTTP_400_BAD_REQUEST)
 	overtime.is_deleted = True
-	overtime.updated_by = request.user.employee_id
+	overtime.updated_by = employe.employee_id
 	overtime.updated_at = datetime.datetime.now()
 	overtime.save()
 	return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Overtime deleted successfully"}, status = status.HTTP_200_OK)
