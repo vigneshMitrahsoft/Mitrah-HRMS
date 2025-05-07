@@ -1,8 +1,10 @@
 import datetime
+from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Overtime
 from employee.models import employee
 from rest_framework.exceptions import APIException
+from django.db.models import Q
 
 
 def calculated_requested_hours(obj):
@@ -47,10 +49,18 @@ class createOvertimeSerializer(serializers.Serializer):
 	def validate(self, data):
 		start_time = data.get('start_time')
 		end_time = data.get('end_time')
+		date = data.get('date')
 		if start_time == end_time:
 			raise APIException(detail={"statuscode": 400, "status": "error", "message": "Start time and end time cannot be the same"})
 		if start_time >= end_time:
 			raise APIException(detail={"statuscode": 400, "status": "error", "message": "Start time must be before end time"})
+		employe = self.context.get('employee')
+		if not employe or not employe.is_active:
+			raise ValidationError("Employee is inactive or not found.")
+		
+		overlapping_entries = Overtime.objects.filter(employee_id=employe, date=date).filter(Q(start_time__lt=end_time) & Q(end_time__gt=start_time))
+		if overlapping_entries.exists():
+			raise APIException(detail={"statuscode": 400, "status": "error", "message": "Overtime entry exists for the given time range."})
 		return data
 	
 	def get_requested_hours(self, obj):
