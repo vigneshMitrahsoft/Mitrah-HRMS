@@ -105,8 +105,8 @@ def update_holiday(request, id):
 @api_view(['POST'])    
 def delete_holiday(request, id):
 	try:
-		holiday.objects.get(holiday_id = id)
-		# holiday_obj.delete()
+		holiday_obj = holiday.objects.get(holiday_id = id)
+		holiday_obj.delete()
 		return Response({"statuscode" : status.HTTP_200_OK, "status": "success", "message": "Holiday deleted successfully"}, status = status.HTTP_200_OK)
 	except holiday.DoesNotExist:
 		return Response({"statuscode" : status.HTTP_404_NOT_FOUND, "status": "error", "message": "Holiday not found"}, status = status.HTTP_404_NOT_FOUND)
