@@ -3,3 +3,5 @@ psycopg2
 djangorestframework
 djangorestframework-simplejwt
 python-dateutil
+pandas
+openpyxl
