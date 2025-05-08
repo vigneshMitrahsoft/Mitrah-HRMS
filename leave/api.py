@@ -6,6 +6,8 @@ from .serializers import create_leavebalance_serializer, get_leavebalance_serial
 from django.db.models import Prefetch
 from datetime import datetime, timedelta
 from attendance.api import convert_timedelta_to_time, add_effective_time
+from attendance.models import employee_attendance, employees_attendance_info
+from attendance.serializers import atttendance_info_post_serializer, create_attendance_byinfo_serializer
 
 def calculate_permission_time(old_effective_time, new_effective_time):
     def time_to_timedelta(t):
@@ -183,8 +185,28 @@ def update_employee_applied_leaves(request, id):
 			"message": "Employee leave request not found"
 		})
 	employee_session_data = create_employee_applied_leaves_days(employee_info.leave_days.all(), many=True).data
+	try:
+		if data['status'] == 'Approved':
+			for employee_session in employee_session_data:
+				attendance_data = {
+					'employee_id': data['employee_id'],
+					'date': employee_session['leave_date']
+				}
+				serializer = create_attendance_byinfo_serializer(data = attendance_data)
+				if serializer.is_valid():
+					attendance = employee_attendance.objects.create(**serializer.validated_data)
+					attendance_id = attendance.attendance_id
+					attendance_data['attendance_id'] = attendance_id
+					attendance_data['status'] = data['leave_type']
+					serializer = atttendance_info_post_serializer(data = attendance_data)
+					if serializer.is_valid():
+						apply_data = serializer.validated_data
+						create_attendance_info = employees_attendance_info.objects.create(**apply_data, action_by =1)
+					else:
+						return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	except:
+		pass
 	serializer = create_employee_applied_leaves(employee_info, data=data, partial=True)
-
 	employee_leave_balance = employee_leave_balances.objects.get(employee_id=employee_info.employee_id)
 	       							##### for calculating the existing total applied leaves #####
 	existing_sick_leave = 0

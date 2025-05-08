@@ -144,13 +144,13 @@ def get_employee_attendance(request,id):
 	# NOTE:Before call the api you need to run the get_employee_attendance sql file in db_schema into the postgres db then call the api
 	#TODO: have to get the employee holidays and display into it
 	data = request.data
-	query = "SELECT * FROM fn_get_employee_attendance(%s, %s, %s)"
+	query = "SELECT * FROM fn_get_employee_attendances(%s, %s, %s)"
 	with connection.cursor() as cursor:
 		cursor.execute(query,[id,data['month'],data['year']])
 		result = cursor.fetchall()
 	column_names = [
 	'date', 'day','is_week_off','attendance_status', 'leave_status',
-	'check_in', 'check_out', 'effective_hours', 'total_hours'
+	'check_in', 'check_out', 'effective_hours', 'total_hours', 'session', 'leave_type'
 	]
 	result_dict = [
 			dict(zip(column_names, row)) for row in result
@@ -180,8 +180,10 @@ def create_employee_attendance_info(request):
 			else:
 				return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 			
-		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_404_NOT_FOUND)
-
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee_attendance already exist."}, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","detail": "Employee doesnot exist."}, status=status.HTTP_400_BAD_REQUEST)
+		
 @api_view(('PATCH',))
 def update_employee_attendance_info(request):
 	id = request.data['employee_id']
