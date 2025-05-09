@@ -30,6 +30,7 @@ class company_Settings(models.Model):
     sick_leaves  = models.FloatField(blank=True, null=True)
     casual_leaves = models.FloatField(blank=True, null=True)
     permission_hours = models.TimeField(blank=True, null=True)
+    pay_cycle_day = models.IntegerField(blank = True, null = True)
 
     class Meta:
         db_table = 'company_settings' 
