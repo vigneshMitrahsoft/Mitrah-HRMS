@@ -268,7 +268,12 @@ def get_employee_attendance_report(request,id):
 	employee_info = employee.objects.prefetch_related(Prefetch('employeeid', queryset=filter_by_date),'attendanceinfo_employeeid').get(employee_id = id)
 	attendance_data = employee_info.employeeid.all()
 	attendance_info = employee_info.attendanceinfo_employeeid.all()
-	attendance_entries = attendance_data[0].attendanceid.all()
+	print("attendance_info",attendance_info)
+	print("attendance_data",attendance_data)
+	try:
+		attendance_entries = attendance_data[0].attendanceid.all()
+	except:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Employee doesnot checkin today"},status=status.HTTP_400_BAD_REQUEST)
 	entry_serializer = attendance_entry_model(attendance_entries, many = True)
 
 	data = {
