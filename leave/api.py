@@ -1,10 +1,32 @@
-from .models import employee_leave_balances,employee_applied_leave_days
+from .models import employee_leave_balances,employee_applied_leave_days, employee_applied_leaves, employee_applied_permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from .serializers import create_leavebalance_serializer, get_leavebalance_serializer, create_employee_applied_leaves, create_employee_applied_leaves_days, get_employee_apllied_leaves,get_employee_applied_leave
-from attendance.models import employee_applied_leaves
+from .serializers import create_leavebalance_serializer, get_leavebalance_serializer, create_employee_applied_leaves, create_employee_applied_leaves_days, get_employee_apllied_leaves,get_employee_applied_leave,create_applied_permission
 from django.db.models import Prefetch
+from datetime import datetime, timedelta
+from attendance.api import convert_timedelta_to_time, add_effective_time
+from attendance.models import employee_attendance, employees_attendance_info
+from attendance.serializers import atttendance_info_post_serializer, create_attendance_byinfo_serializer
+
+def calculate_permission_time(old_effective_time, new_effective_time):
+    def time_to_timedelta(t):
+        return timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+    first_time_delta = time_to_timedelta(old_effective_time)
+    second_time_delta = time_to_timedelta(new_effective_time)
+    total_time_delta = first_time_delta - second_time_delta
+    total_seconds = total_time_delta.total_seconds()
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    result_time = datetime(1900, 1, 1, int(hours), int(minutes), int(seconds)).time()
+    return result_time
+
+def time_duration(start_date, end_date):
+	start_dt = datetime.strptime(str(start_date), "%H:%M")
+	end_dt = datetime.strptime(str(end_date), "%H:%M")
+	duration = end_dt - start_dt
+	time = convert_timedelta_to_time(duration)
+	return time
 
 def check_employee_leave_availability(employee_leave_info):
 	Total_days = 0
@@ -22,6 +44,17 @@ def check_employee_leave_availability(employee_leave_info):
 		leave_balance = employee_leave_balance.casual_leave
 	
 	return Total_days, leave_balance
+
+def check_existing_permission(data):
+	check = employee_applied_permissions.objects.filter(employee = data['employee'], permission_date = data['permission_date'])
+	start_time = datetime.strptime(data['start_time'], "%H:%M").time()
+	if check:
+		for check_value in check:
+			if check_value.start_time <= start_time <= check_value.end_time:
+				return True
+	else:
+		return False
+	return False
 
 @api_view(('POST',))
 def create_employee_leave_balances(request):
@@ -103,10 +136,6 @@ def apply_employee_leaves(request):
 				employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - Total_days
 			else:
 				employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - Total_days
-			# if serializer['sick_leave'].value > 0 :   #for testing purpose
-			# 	employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - serializer['sick_leave'].value
-			# if serializer['casual_leave'].value > 0 :
-			# 	employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - serializer['casual_leave'].value
 			employee_leave_balance.save()
 			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Leave applied successfully"},status=status.HTTP_201_CREATED)
 
@@ -157,8 +186,28 @@ def update_employee_applied_leaves(request, id):
 			"message": "Employee leave request not found"
 		})
 	employee_session_data = create_employee_applied_leaves_days(employee_info.leave_days.all(), many=True).data
+	try:
+		if data['status'] == 'Approved':
+			for employee_session in employee_session_data:
+				attendance_data = {
+					'employee_id': data['employee_id'],
+					'date': employee_session['leave_date']
+				}
+				serializer = create_attendance_byinfo_serializer(data = attendance_data)
+				if serializer.is_valid():
+					attendance = employee_attendance.objects.create(**serializer.validated_data)
+					attendance_id = attendance.attendance_id
+					attendance_data['attendance_id'] = attendance_id
+					attendance_data['status'] = data['leave_type']
+					serializer = atttendance_info_post_serializer(data = attendance_data)
+					if serializer.is_valid():
+						apply_data = serializer.validated_data
+						create_attendance_info = employees_attendance_info.objects.create(**apply_data, action_by =1)
+					else:
+						return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	except:
+		pass
 	serializer = create_employee_applied_leaves(employee_info, data=data, partial=True)
-
 	employee_leave_balance = employee_leave_balances.objects.get(employee_id=employee_info.employee_id)
 	       							##### for calculating the existing total applied leaves #####
 	existing_sick_leave = 0
@@ -179,7 +228,6 @@ def update_employee_applied_leaves(request, id):
 		if Total_days > leave_balance + existing_casual_leave + existing_sick_leave:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"failed","message":"Leave balance is not sufficient"})
 		serializer.save()
-		
 		if data['leave_type'] == 'Sick Leave':
 			if Total_days > existing_sick_leave:
 				total = Total_days - existing_sick_leave
@@ -207,3 +255,63 @@ def update_employee_applied_leaves(request, id):
 			"status": "failed",
 			"errors": serializer.errors
 		}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(('POST',))
+def apply_employee_permission(request):
+	check_exist_permission  = check_existing_permission(request.data)
+	if check_exist_permission:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
+	serializer = create_applied_permission(data = request.data)
+	if serializer.is_valid():
+		data = request.data
+		validated_data = serializer.validated_data
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		start_dt = datetime.strptime(data['start_time'], "%H:%M")
+		end_dt = datetime.strptime(data['end_time'], "%H:%M")
+		duration = end_dt - start_dt
+		time = convert_timedelta_to_time(duration)
+		if time <= employee_permission_balance.permissions:
+			employee_permission = employee_applied_permissions.objects.create(**validated_data, created_by = 1 , updated_by = 1)
+			value = calculate_permission_time(employee_permission_balance.permissions , time)
+			employee_permission_balance.permissions = value
+			employee_permission_balance.save()
+			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
+		else:
+			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(('PATCH',))
+def update_employee_permission(request,id):
+	data = request.data
+	if data['end_time'] < data['start_time']:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"End date msut be greater"}, status=status.HTTP_400_BAD_REQUEST)
+	check_exist_permission  = check_existing_permission(data)
+	if check_exist_permission:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
+	applied_permission = employee_applied_permissions.objects.get(permission_id = id)
+	employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+	time  = time_duration(data['start_time'], data['end_time'])
+	previous_duration = calculate_permission_time(applied_permission.end_time ,applied_permission.start_time)
+	balance_duration = add_effective_time(employee_permission_balance.permissions, previous_duration)
+	if time <= balance_duration:
+		serializer = create_applied_permission(applied_permission, partial = True)
+		value = calculate_permission_time(balance_duration , time)
+		employee_permission_balance.permissions = value
+		employee_permission_balance.save()
+		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
+
+	else:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(('GET',))
+def get_employees_applied_permissions(request):
+	employee_pending_permissions = employee_applied_permissions.objects.filter(status = "Pending")
+	serializer = create_applied_permission(employee_pending_permissions, many = True)
+	return Response({'status':status.HTTP_200_OK, 'data':serializer.data},status=status.HTTP_200_OK)
+
+@api_view(('GET',))
+def get_employee_applied_permissions(request, id):
+	employee_applied_permission = employee_applied_permissions.objects.filter(employee = id)
+	serializer = create_applied_permission(employee_applied_permission, many = True)
+	return Response({'status':status.HTTP_200_OK, 'data':serializer.data},status=status.HTTP_200_OK)
