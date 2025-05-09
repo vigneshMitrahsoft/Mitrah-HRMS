@@ -10,7 +10,7 @@ from .serializers import *
 from employee.models import employee
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException
-from employee.api import IsAuthorized
+from auth.views import IsAuthorized
 
 # class LoanList(APIView):
 #     def get(self,request):

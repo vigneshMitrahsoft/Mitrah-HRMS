@@ -59,11 +59,12 @@ def check_existing_permission(data):
 @api_view(('POST',))
 def create_employee_leave_balances(request):
 	data  = {
-		'employee_id': 10,
+		'employee_id': 1,
 		'sick_leave': 5,
 		'casual_leave': 1,
 		'permissions': 1,
-		'compensation_leave': 1
+		'compensation_leave': 1,
+		'overtime_balance_hours': 1,
 	}
 	serializer = create_leavebalance_serializer(data=data)
 	if serializer.is_valid():
