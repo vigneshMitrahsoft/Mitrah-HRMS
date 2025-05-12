@@ -40,7 +40,10 @@ def get_employees(request):
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def create_employee(request):
+	token_user_id = request.user.employee_id
 	serializer = create_serializer(data = request.data)
 	if serializer.is_valid():
 		data = serializer.validated_data
@@ -50,7 +53,7 @@ def create_employee(request):
 			data['password'] = hashed_password 
 		role_ids = data.pop('role_ids')
 		if role_ids:
-			create_employee = employee.objects.create(**data, created_by = 1, updated_by = 1)
+			create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 		for role in role_ids:
 			employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
 		
@@ -60,13 +63,13 @@ def create_employee(request):
 			'employee_id':create_employee.employee_id,
 			'sick_leave':company_settings_data.sick_leaves,
 			'casual_leave':company_settings_data.casual_leaves,
-			'permissions':2,
-			'compensation_leave': 0 
+			'permissions':company_settings_data.permission_hours,
+			'compensation_leave': company_settings_data.leave_compensation
 		}
 		serializer = create_leavebalance_serializer(data=leave_balance_data)
 		if serializer.is_valid():
 			data = serializer.validated_data
-			create_leave_balance = employee_leave_balances.objects.create(**data , created_by = 1, updated_by = 1)
+			create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
 		else:
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
@@ -75,18 +78,20 @@ def create_employee(request):
 
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def update_employee(request, id):
 	data = request.data
-
+	token_user_id = request.user.employee_id
 	try:
 		employee_data = employee.objects.get(employee_id=id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
 	serializer = update_serializer(employee_data, data=data, partial=True)
 	if serializer.is_valid():
+		
 		validated_data = serializer.validated_data
-		serializer.save()  
-
+		serializer.save(updated_by = token_user_id     )  
+ 
 		validated_role_ids = [role.role_id for role in validated_data.get('role_ids', [])]
 
 		current_roles = set(
@@ -104,7 +109,7 @@ def update_employee(request, id):
 			try:
 				emp_role = employee_roles.objects.get(employee_id=id, role_id=role_id)
 				emp_role.is_active = True
-				emp_role.updated_by = id
+				emp_role.updated_by = token_user_id
 				emp_role.save()
 			except employee_roles.DoesNotExist:
 				if roles.objects.filter(role_id=role_id).exists():
@@ -112,7 +117,8 @@ def update_employee(request, id):
 						employee_id=employee_data.employee_id,
 						role_id=role_id,
 						is_active=True,
-						created_by=id
+						created_by=token_user_id,
+						updated_by = token_user_id
 					)
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
@@ -127,6 +133,7 @@ def update_employee(request, id):
 def delete_employee(request, id):
 	employee_delete = employee.objects.get(employee_id=id)
 	employee_delete.is_active = False
+	employee_delete.updated_by = request.user.employee_id
 	employee_delete.save()
 	return Response({"statuscode": status.HTTP_200_OK, "status": "success", "message": " Deleted successfully."}, status=status.HTTP_200_OK)
 
@@ -147,23 +154,25 @@ def login(request):
 		return Response({"message": "Invalid credentials"}, status=401)
 	
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
 def create_employee_salary_info(request):
 	data = request.data
 	serializer = create_salary_info_serializer(data = data)
 	if serializer.is_valid():
 		data = serializer.validated_data
-		salary_info = employee_salary_info.objects.create(**data, created_by = 1, updated_by =1)
+		salary_info = employee_salary_info.objects.create(**data, created_by = request.user.employee_id, updated_by = request.user.employee_id)
 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
 	else:
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
 @api_view(('PATCH',))
+@permission_classes((IsAuthenticated,))
 def update_employee_salary_info(request,id):
 	salary_info = employee_salary_info.objects.get(salary_id = id)
 	data = request.data
 	serializer = create_salary_info_serializer(salary_info, data = data, partial = True)
 	if serializer.is_valid():
-		serializer.save()
+		serializer.save(updated_by = request.user.employee_id)
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
 			status=status.HTTP_200_OK,

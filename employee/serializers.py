@@ -58,7 +58,7 @@ class update_serializer(serializers.ModelSerializer):
 		model = employee
 		fields = [
 			'company_id', 'first_name', 'last_name', 'email', 'password',
-			'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id'
+			'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id', 'updated_by'
 		]
 
 	def validate_role_ids(self, value):
