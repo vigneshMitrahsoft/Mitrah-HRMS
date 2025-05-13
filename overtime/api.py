@@ -86,7 +86,7 @@ def overtime_acceptance(request, pk):
 			requested_hours = calculated_requested_hours(overtime)
 			employee_instance = overtime.employee_id
 			company_instance = employee_instance.company_id
-			company_setting_instance = company_settings.objects.filter(company = company_instance).first()
+			company_setting_instance = company_Settings.objects.filter(company = company_instance).first()
 
 			if not company_setting_instance:
 				return Response({"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Company settings not found"}, status = status.HTTP_400_BAD_REQUEST)
