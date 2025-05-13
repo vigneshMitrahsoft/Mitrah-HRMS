@@ -27,6 +27,7 @@ class get_serializer(serializers.Serializer):
 	def get_roles(self, obj):
 		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
 		return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
+	
 class create_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
 	first_name = serializers.CharField(required = True)
@@ -34,10 +35,16 @@ class create_serializer(serializers.Serializer):
 	email = serializers.EmailField(required = True)
 	password = serializers.CharField(required = True)
 	date_of_birth = serializers.DateField(required = True)
+	gender = serializers.IntegerField(required = True)
+	phone = serializers.IntegerField(required = True)
+	aadhar_number = serializers.IntegerField(required = False)
+	pan_number = serializers.IntegerField(required = False)
+	profile_picture_path = serializers.CharField(required = False)
 	address = serializers.CharField(required = True)
 	role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
 	date_of_joining = serializers.DateField(required = True)
 	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
+
 
 	def validate(self,data):
 		data['email']= data['email'].lower()
@@ -45,6 +52,8 @@ class create_serializer(serializers.Serializer):
 		if user_exists:
 			raise serializers.ValidationError({"error":"Email already exists."})
 		return data
+	
+	
 
 class update_serializer(serializers.ModelSerializer):
 	# This will directly accept a list of role IDs (primary keys)
@@ -57,7 +66,7 @@ class update_serializer(serializers.ModelSerializer):
 	class Meta:
 		model = employee
 		fields = [
-			'company_id', 'first_name', 'last_name', 'email', 'password',
+			'company_id', 'first_name', 'last_name', 'email', 'password','gender',
 			'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id', 'updated_by'
 		]
 

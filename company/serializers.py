@@ -38,8 +38,6 @@ class companyCreateSerializer(serializers.Serializer):
 			errors.append("Other allowance percent must be between 0 and 1.")
 		if data['basic_pay'] + data['hra'] + data['other_allowances'] > 100:
 			errors.append("Total salary component percentages should not exceed 100%.")
-		if data['pay_cycle_day'] < 1 or data['pay_cycle_day'] > 31:
-			errors.append("Pay cycle day must be between 1 and 31.")
 		
 		if errors:
 			raise serializers.ValidationError(errors)
