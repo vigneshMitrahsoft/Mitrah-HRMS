@@ -44,6 +44,8 @@ class get_employee_attendance_serializer(serializers.Serializer):
 	total_hours = serializers.TimeField(required = False)
 	session = serializers.CharField(required = False)
 	leave_type = serializers.CharField(required = False)
+	attendance_id = serializers.IntegerField(required = False)
+	# attendance_id = serializers.PrimaryKeyRelatedField(queryset=employee_attendance.objects.all(), required=False)
 
 class attendance_entry_model(serializers.ModelSerializer):
 	checkin = serializers.DateTimeField(source = 'checkin_entry', required = False, allow_null=True)

@@ -1,23 +1,15 @@
+
 CREATE OR REPLACE FUNCTION public.fn_get_employee_attendances(
-    employee_id integer,
-    month integer,
-    year integer
-)
-RETURNS TABLE(
-    date_value date,
-    day_of_week character varying,
-    is_week_off boolean,
-    attendance_status character varying,
-    leave_status character varying,
-    check_in timestamp with time zone,
-    check_out timestamp with time zone,
-    effective_hours time without time zone,
-    total_hours time without time zone,
-    session character varying,
-    leave_type character varying
-)
-LANGUAGE plpgsql
-AS $$
+	employee_id integer,
+	month integer,
+	year integer)
+    RETURNS TABLE(date_value date, day_of_week character varying, is_week_off boolean, attendance_status character varying, leave_status character varying, check_in timestamp with time zone, check_out timestamp with time zone, effective_hours time without time zone, total_hours time without time zone, session character varying, leave_type character varying, attendance_id bigint) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
 DECLARE
     start_date DATE;
     end_date DATE;
@@ -42,8 +34,9 @@ BEGIN
         ea.check_out,
         COALESCE(ea.effective_hours, '00:00:00') AS effective_hours,
         COALESCE(ea.total_hours, '00:00:00') AS total_hours,
-        leave_days.session,
-        leave.leave_type
+        COALESCE(leave_days.session,'') AS  session,  
+        COALESCE(leave.leave_type,'') AS leave_type,
+		ea.attendance_id
     FROM CET_Dates dat
     LEFT JOIN employee_attendance ea 
         ON ea.date = dat.DateValue AND ea.employee_id_id = employee_id
@@ -60,4 +53,7 @@ BEGIN
         ON leave.id = leave_days.applied_leave_request_id_id AND leave.employee_id_id = employee_id
     ORDER BY dat.DateValue;
 END;
-$$;
+$BODY$;
+
+ALTER FUNCTION public.fn_get_employee_attendances(integer, integer, integer)
+    OWNER TO postgres;

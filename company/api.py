@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime,timedelta
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from .models import company, company_Settings
@@ -27,6 +27,11 @@ def specific_company(request, pk):
 
 @api_view(('POST',))
 def company_create(request):
+	data = request.data
+	hours = data['permission_hours']
+	seconds = int(hours * 3600)
+	time_conversion = str(timedelta(seconds=seconds))
+	data['permission_hours'] = time_conversion
 	serializer = companyCreateSerializer(data = request.data)
 	if serializer.is_valid():
 		datas = serializer.validated_data
