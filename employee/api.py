@@ -155,6 +155,7 @@ def login(request):
 	
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def create_employee_salary_info(request):
 	data = request.data
 	serializer = create_salary_info_serializer(data = data)
@@ -167,6 +168,7 @@ def create_employee_salary_info(request):
 	
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def update_employee_salary_info(request,id):
 	salary_info = employee_salary_info.objects.get(salary_id = id)
 	data = request.data
@@ -181,12 +183,16 @@ def update_employee_salary_info(request,id):
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_employees_salary(request):
 	employees_salary = employee_salary_info.objects.all()
 	serialized_data = create_salary_info_serializer(employees_salary, many=True)
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_employee_salary(request,id):
 	try:
 		data = employee_salary_info.objects.get(salary_id = id)

@@ -108,6 +108,7 @@ def check_in_entry(request):
 	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"checkin successfully"},status=status.HTTP_201_CREATED)
 
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
 def check_out_entry(request):
 	token_user_id = request.user.employee_id
 	employee_id = token_user_id
@@ -142,6 +143,7 @@ def check_out_entry(request):
 	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"checkout successfully"},status=status.HTTP_201_CREATED)
 
 @api_view(('POST',))
+@permission_classes((IsAuthenticated,))
 def get_employee_attendance(request,id):
 	# NOTE:Before call the api you need to run the get_employee_attendance sql file in db_schema into the postgres db then call the api
 	data = request.data
@@ -273,15 +275,21 @@ def update_employee_attendance_entries(request,id):
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def get_employee_attendance_report(request,id):
-	filter_by_date = employee_attendance.objects.prefetch_related('attendanceid').filter(employee_id = id, date = date.today())
-	employee_info = employee.objects.prefetch_related(Prefetch('employeeid', queryset=filter_by_date),'attendanceinfo_employeeid').get(employee_id = id)
-	attendance_data = employee_info.employeeid.all()
-	attendance_info = employee_info.attendanceinfo_employeeid.all()
 	try:
-		attendance_entries = attendance_data[0].attendanceid.all()
+		if request.data['date']:
+			filter_date = request.data['date']
 	except:
-		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Employee doesnot checkin today"},status=status.HTTP_400_BAD_REQUEST)
+		filter_date = date.today()
+	filter_by_date = employee_attendance.objects.prefetch_related('attendanceid').filter(employee_id = id, date = filter_date)
+	employee_info = employee.objects.prefetch_related(Prefetch('employeeid', queryset=filter_by_date),'attendanceinfo_employeeid').get(employee_id = id)
+	try:
+		attendance_data = employee_info.employeeid.all()
+		attendance_entries = attendance_data[0].attendanceid.all()
+		attendance_info = employee_info.attendanceinfo_employeeid.all()
+	except:
+		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Employee doesnot checkin"},status=status.HTTP_400_BAD_REQUEST)
 	entry_serializer = attendance_entry_model(attendance_entries, many = True)
 
 	data = {
@@ -302,6 +310,8 @@ def get_employee_attendance_report(request,id):
 		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","data":serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_all_employee_attendance_report(request):
 	filter_by_date = employee_attendance.objects.prefetch_related('attendanceid').filter(date = date.today())
 	employees_info = employee.objects.prefetch_related(

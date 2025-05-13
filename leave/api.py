@@ -80,6 +80,8 @@ def create_employee_leave_balances(request):
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_employees_leave_balances(request):
 	try:
 		data = employee_leave_balances.objects.all()
@@ -90,6 +92,7 @@ def get_employees_leave_balances(request):
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def get_employee_leave_balances(request,id):
 	try:
 		data = employee_leave_balances.objects.get(leave_balance_id = id)
@@ -153,6 +156,8 @@ def apply_employee_leaves(request):
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_employees_applied_leaves(request):
 	
 	employee_leaves = employee_applied_leaves.objects.filter(status = 'Pending')
@@ -160,6 +165,7 @@ def get_employees_applied_leaves(request):
 	return Response({'status':status.HTTP_200_OK, 'data':serializer.data},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def get_employee_applied_leaves(request,id):
 	employee_leaves = employee_applied_leaves.objects.prefetch_related('leave_days').filter(id = id)
 	result = []
@@ -326,12 +332,15 @@ def update_employee_permission(request,id):
 		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def get_employees_applied_permissions(request):
 	employee_pending_permissions = employee_applied_permissions.objects.filter(status = "Pending")
 	serializer = create_applied_permission(employee_pending_permissions, many = True)
 	return Response({'status':status.HTTP_200_OK, 'data':serializer.data},status=status.HTTP_200_OK)
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
 def get_employee_applied_permissions(request, id):
 	employee_applied_permission = employee_applied_permissions.objects.filter(employee = id)
 	serializer = create_applied_permission(employee_applied_permission, many = True)
