@@ -60,7 +60,7 @@ def create_employee(request):
 			'employee_id':create_employee.employee_id,
 			'sick_leave':company_settings_data.sick_leaves,
 			'casual_leave':company_settings_data.casual_leaves,
-			'permissions':2,
+			'permissions':company_settings_data.permission_hours,
 			'compensation_leave': 0 
 		}
 		serializer = create_leavebalance_serializer(data=leave_balance_data)
@@ -194,8 +194,8 @@ def calculate_employee_salary(request,id):
 	employee_salary = employee_salary_info.objects.get(employee_id = employee_instance)
 	ctc = employee_salary.gross_salary + employee_salary.variable_pay
 	basic_pay = ctc*(employee_company.basic_pay / 100)
-	hra = ctc*(employee_company.HRA / 100)
-	other_allowance = ctc*(employee_company.other_allowances / 100)
+	hra = basic_pay*(employee_company.HRA / 100)
+	other_allowance = basic_pay*(employee_company.other_allowances / 100)
 	employee_pf = employee_company.employee_PF
 	employee_esi = employee_company.employee_ESI
 	employee_pf_deduction = (employee_pf/100) * basic_pay

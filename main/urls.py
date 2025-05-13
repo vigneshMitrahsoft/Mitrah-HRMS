@@ -28,7 +28,8 @@ app = ([
     path("shifttype/", include('shifttype.urls')),
     path("overtime/", include('overtime.urls')), 
     path("leave/", include('leave.urls')),
-    path("holiday/", include('holiday.urls'))
+    path("holiday/", include('holiday.urls')),
+    path("payslips/", include('payslips.urls'))
 ])
 
 urlpatterns = [
