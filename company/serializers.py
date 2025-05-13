@@ -1,13 +1,10 @@
 from rest_framework import serializers
 from .models import company
-
-
 class companySerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = company
 		fields = '__all__'
-
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
@@ -22,7 +19,8 @@ class companyCreateSerializer(serializers.Serializer):
 	casual_leaves = serializers.FloatField()
 	basic_pay = serializers.FloatField()
 	other_allowances = serializers.FloatField()
-	permission_hours = serializers.TimeField()
+	permission_hours = serializers.FloatField()
+	pay_cycle_day = serializers.IntegerField(min_value = 1, max_value = 31)
 
 	def validate(self,data):
 		errors = []
@@ -38,15 +36,11 @@ class companyCreateSerializer(serializers.Serializer):
 			errors.append("Other allowance percent must be between 0 and 1.")
 		if data['basic_pay'] + data['hra'] + data['other_allowances'] > 100:
 			errors.append("Total salary component percentages should not exceed 100%.")
-		if data['pay_cycle_day'] < 1 or data['pay_cycle_day'] > 31:
-			errors.append("Pay cycle day must be between 1 and 31.")
-		
+
 		if errors:
 			raise serializers.ValidationError(errors)
-	
+
 		return data
-
-
 class companyUpdateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
@@ -62,4 +56,3 @@ class companyUpdateSerializer(serializers.Serializer):
 	basic_pay = serializers.FloatField()
 	other_allowances = serializers.FloatField()
 	permission_hours = serializers.TimeField()
-
