@@ -4,13 +4,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from employee.models import employee
 from leave.models import employee_applied_leaves
-from loan.models import LoanDeduction
+from loan.models import LoanDeduction, Repayment
 from overtime.models import Overtime
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
 from collections import OrderedDict
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
+from django.db.models import Sum
 
 @api_view(('GET',))
 def dashboard(request):
@@ -38,8 +39,9 @@ def dashboard(request):
 		email = employee_info.email
 
 		end_date = timezone.now().date()
-		start_date = end_date - relativedelta(months=5)
+		start_date = (end_date.replace(day=1) - relativedelta(months=4))#end_date - relativedelta(months=5)
 
+		employee_count = employee.objects.filter(company_id=company_id).count()
 		active_employee_count = employee.objects.filter(company_id = company_id, is_active=True).count()
 		inactive_employee_count = employee.objects.filter(company_id = company_id, is_active=False).count()
 		employee_applied_leave_count = employee_applied_leaves.objects.filter(employee_id__company_id = company_id).count()
@@ -62,15 +64,15 @@ def dashboard(request):
 			month_label = entry['month'].strftime('%b %Y')
 			monthly_data[month_label] = entry['count']
 
-		pending_loan_count = LoanDeduction.objects.filter(employee__company_id=company_id, status='Pending').count()
-		print('pending_loan_count:', pending_loan_count)
-		approved_loan_count = LoanDeduction.objects.filter(employee__company_id=company_id, status='Approved').count()
-		print('approved_loan_count:', approved_loan_count)
+		pending_loan_count = LoanDeduction.objects.filter(employee_id__company_id=company_id, status='Pending').count()
+		print('pending_loan_count:=============>', pending_loan_count)
+		approved_loan_count = LoanDeduction.objects.filter(employee_id__company_id=company_id, status='Approved').count()
+		print('approved_loan_count:==============>', approved_loan_count)
 
 		# Monthly loan approvals (last 5 months)
 		monthly_loan_counts = (
 			LoanDeduction.objects
-			.filter(approved_date__range=(start_date, end_date), employee__company_id=company_id, status='Approved')
+			.filter(approved_date__range=(start_date, end_date), employee_id__company_id=company_id, status='Approved')
 			.annotate(month=TruncMonth('approved_date'))
 			.values('month')
 			.annotate(count=Count('loan_id'))
@@ -92,11 +94,27 @@ def dashboard(request):
 			label = entry['month'].strftime('%b %Y')
 			loan_monthly_data[label] = entry['count']
 
-		print('active_employee_count:', active_employee_count)
-		print('inactive_employee_count:', inactive_employee_count)
-		print('employee_applied_leave_count:', employee_applied_leave_count)
-		print('loan_count:', loan_count)
-		print('overtime_count:', overtime_count)
+		# Get all accepted loans for the company
+		accepted_loans = LoanDeduction.objects.filter(employee_id__company_id=company_id, status='Accepted')
+
+		# Sum total loan amounts
+		total_loan_amount = accepted_loans.aggregate(total=Sum('loan_amount'))['total'] or 0
+		print('total_loan_amount:================================>', total_loan_amount)
+
+		# Get all repayments made against those loans
+		loan_ids = accepted_loans.values_list('loan_id', flat=True)
+		total_repaid_amount = Repayment.objects.filter(loan_id__in=loan_ids).aggregate(total=Sum('amount_paid'))['total'] or 0
+		print('total_repaid_amount:===================================>', total_repaid_amount)
+
+		# Calculate amount still to be paid
+		due_amount_to_company = total_loan_amount - total_repaid_amount
+
+		# print('active_employee_count:', active_employee_count)
+		# print('inactive_employee_count:', inactive_employee_count)
+		# print('employee_applied_leave_count:', employee_applied_leave_count)
+		# print('loan_count:', loan_count)
+		# print('overtime_count:', overtime_count)
+		# print('employee_count:', employee_count)
 
 		context = {
 			"employee": {
@@ -104,6 +122,7 @@ def dashboard(request):
 				"email": email
 			},
 			"employees_data": {
+				"employee_count": employee_count,
 				"count_of_employees":{
 					"active_employee_count": active_employee_count,
 					"inactive_employee_count": inactive_employee_count
@@ -117,7 +136,10 @@ def dashboard(request):
 				"loan_count": loan_count,
 				"pending_loan_count": pending_loan_count,
 				"approved_loan_count": approved_loan_count,
-				"analytic_data_of_loans": loan_monthly_data
+				"analytic_data_of_loans": loan_monthly_data,
+				"total_loan_amount": total_loan_amount,
+				"total_repaid_amount": total_repaid_amount,
+				"due_amount_to_company": due_amount_to_company
 			},
 			"overtime_data": {
 				"overtime_count": overtime_count
