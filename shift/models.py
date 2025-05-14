@@ -19,7 +19,7 @@ from shifttype.models import shift_type
 
 class shift(models.Model):
     shift_id = models.BigAutoField(primary_key = True)
-    shift_type_id = models.ForeignKey(shift_type, on_delete=models.DO_NOTHING, related_name = 'shifttypeid')
+    shift_type_id = models.ForeignKey(shift_type, on_delete=models.DO_NOTHING, related_name = 'shifttypeid', db_column = 'shift_type_id')
     start_time = models.TimeField()  # Updated to TimeField
     end_time = models.TimeField()  
     is_active = models.BooleanField(default = True)
@@ -33,8 +33,8 @@ class shift(models.Model):
 
 class employee_shift(models.Model):
     emp_shift_id = models.BigAutoField(primary_key = True)
-    emp_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'emp_id')
-    shift_id = models.ForeignKey(shift, on_delete=models.DO_NOTHING, related_name = 'shiftid')
+    emp_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'emp_id', db_column = 'emp_id')
+    shift_id = models.ForeignKey(shift, on_delete=models.DO_NOTHING, related_name = 'shiftid', db_column = 'shift_id')
     shift_start_time = models.TimeField()
     shift_end_time = models.TimeField()
     is_active = models.BooleanField(default = True)

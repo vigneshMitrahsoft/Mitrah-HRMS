@@ -17,7 +17,7 @@ cursor.execute(f"INSERT INTO company_settings(hra, employer_esi, employee_esi, e
 cursor.execute("INSERT INTO roles(role_name)VALUES('Admin'),('HR'),('HR Admin'),('Staff')")
 cursor.execute("INSERT INTO employee_type(type_name)VALUES('Full Time'),('Part Time'),('Contract') RETURNING type_id")
 type_id = cursor.fetchone()[0]
-cursor.execute(f"INSERT INTO employee(company_id, first_name, last_name, email, password, date_of_birth, address, date_of_joining, type_id, created_at, updated_at, created_by, updated_by, is_active, is_superuser)VALUES({company_id},'hr','testing','hr.hrms@gmail.com','hr@rtesting', '1998-01-01','testing','2024-01-01',{type_id},'{datetime.now()}','2025-05-06 22:16:05.786801+05:30',1,1,false,false)")
+cursor.execute(f"INSERT INTO employee(company_id, first_name, last_name, email, password, date_of_birth, address, date_of_joining, type_id, created_at, updated_at, created_by, updated_by, is_active, is_superuser)VALUES({company_id},'hr','testing','hr.bala@gmail.com','hr@rtesting', '1998-01-01','testing','2024-01-01',{type_id},'{datetime.now()}','2025-05-06 22:16:05.786801+05:30',1,1,true,false)")
 conn.commit()
 cursor.close()
 conn.close()
