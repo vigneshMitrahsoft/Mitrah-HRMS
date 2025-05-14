@@ -50,7 +50,8 @@ INSTALLED_APPS = [
 	"overtime",
     "leave",  
     "holiday",
-	"payslips"
+	"payslips",
+	"dashboard"
 ]
 
 
