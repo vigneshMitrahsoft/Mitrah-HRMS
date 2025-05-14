@@ -34,13 +34,13 @@ def upload_image(id, encode_string, image_for):
 			raise ValueError(f"Unsupported image type: {image_type}")
 		directory = os.path.join("assets", "profile_picture")
 		os.makedirs(directory, exist_ok=True)
-		file_name = f"{employee_id}_profile.{image_type}"
+		file_name = f"{id}_profile.{image_type}"
 		file_path = os.path.join(directory, file_name)
 		with open(file_path, "wb") as f:
 			f.write(image_data)	
 		for ext in allowed_types:
 			if ext != image_type:
-				old_file = os.path.join(directory, f"{employee_id}_profile.{ext}")
+				old_file = os.path.join(directory, f"{id}_profile.{ext}")
 				if os.path.exists(old_file):
 					os.remove(old_file)
 
@@ -71,8 +71,8 @@ def get_employees(request):
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('POST',))
-# @permission_classes((IsAuthenticated,))
-# @IsAuthorized(['hr'])
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def create_employee(request):
 	data = request.data
 	token_user_id = request.user.employee_id
@@ -101,7 +101,7 @@ def create_employee(request):
 			'employee_id':create_employee.employee_id,
 			'sick_leave':company_settings_data.sick_leaves,
 			'casual_leave':company_settings_data.casual_leaves,
-			'permissions':company_settings_data.permission_hours,
+			'permission_hours':company_settings_data.permission_hours,
 			'compensation_leave': company_settings_data.leave_compensation
 		}
 		serializer = create_leavebalance_serializer(data=leave_balance_data)

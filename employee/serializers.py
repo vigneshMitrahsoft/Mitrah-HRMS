@@ -22,7 +22,7 @@ class get_serializer(serializers.Serializer):
 	# role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
 	date_of_joining = serializers.DateField(required = True)
 	# type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
-	type_id = serializers.SerializerMethodField()
+	employee_type = serializers.SerializerMethodField()
 	roles = serializers.SerializerMethodField()
 	gender = serializers.IntegerField(required = True)
 	phone = serializers.IntegerField(required = True)
@@ -34,7 +34,7 @@ class get_serializer(serializers.Serializer):
 		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
 		return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
 	
-	def get_type_id(self,obj):
+	def get_employee_type(self,obj):
 		type = employee_type.objects.filter(type_id = obj.type_id.type_id)
 		return [{'type_id': type.type_id, 'type_name': type.type_name} for type in type]
 	

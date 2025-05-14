@@ -20,7 +20,7 @@ class employee_leave_balances(models.Model):
 	employee_id  = models.OneToOneField(employee, on_delete=models.DO_NOTHING, related_name = 'employee_leavebalanceid')
 	sick_leave = models.FloatField(default=0)
 	casual_leave = models.FloatField(default=0)
-	permissions = models.TimeField(default=0)
+	permission_hours = models.FloatField(blank=True, null=True)
 	compensation_leave = models.FloatField(default=0)
 	overtime_balance_hours = models.FloatField(default=0, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
