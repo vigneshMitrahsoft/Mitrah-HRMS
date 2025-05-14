@@ -258,25 +258,25 @@ def request_acceptance(request, pk):
 	loan = check_loan_exist(pk)
 	serializer = loanStatusUpdateSerializer(loan, data = request.data, partial = True)
 	if serializer.is_valid():
-		datas = serializer.validated_data
+		data = serializer.validated_data
 
-		datas['status'] = string.capwords(datas['status'])
+		data['status'] = string.capwords(data['status'])
 
-		if datas['status'] not in ['Accepted', 'Rejected']:
+		if data['status'] not in ['Accepted', 'Rejected']:
 			raise ValidationError(detail = {"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Invaild status"})
 		
-		if datas['status'] == 'Accepted':
+		if data['status'] == 'Accepted':
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Accepted", start_date = datetime.now(), updated_at = datetime.now(), approved_date = datetime.now()) 
 			print("Calling create_repayment_records function...")  
 			create_repayment_records(pk) 
 			print("create_repayment_records function executed.")
 			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Loan accepted successfully and created repayment"}, status = status.HTTP_201_CREATED)
 		
-		if datas['status'] == 'Rejected':
+		if data['status'] == 'Rejected':
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Rejected", updated_at = datetime.now())
 			return  Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan rejected successfully"}, status = status.HTTP_200_OK)
 		
-		if datas['status'] == "Completed":
+		if data['status'] == "Completed":
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Completed", updated_at = datetime.now())
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan completed successfully"}, status = status.HTTP_200_OK)
 
