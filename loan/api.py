@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta
+import calendar
+from datetime import datetime, timedelta, date
+from django.db import transaction
 from django.utils import timezone
 import string
 from rest_framework.exceptions import ValidationError
@@ -6,13 +8,14 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import LoanDeduction, Repayment
+from .models import LoanDeduction, Repayment, EmiRepayments
 from .serializers import *
 from employee.models import employee
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import APIException
 from auth.views import IsAuthorized
 from employee.models import employee_salary_info
+from company.models import company_Settings
 from dateutil.relativedelta import relativedelta
 
 # class LoanList(APIView):
@@ -104,72 +107,110 @@ def check_loan_exist(pk):
 #     return repayment
 
 def create_repayment_records(pk):
-	print("Inside repayment creation using percentage EMI")
+    try:
+        loan = LoanDeduction.objects.get(pk=pk, is_deleted=False)
+    except LoanDeduction.DoesNotExist:
+        raise APIException(detail={"statuscode": 404, "status": "error", "message": "Loan not found."})
 
-	try:
-		loan = LoanDeduction.objects.get(pk=pk, is_deleted=False)
-	except LoanDeduction.DoesNotExist:
-		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Loan not found."})
+    employee = loan.employee
+    approved_date = loan.approved_date
+    repayment_type = loan.repayment_type
+    loan_amount = loan.loan_amount
+    percentage_amount = loan.percentage_amount
+    fixed_amount = loan.fixed_amount
+    tenure = loan.tenure
+    remaining_balance = loan_amount
 
-	employee = loan.employee
-	start_date = loan.start_date
-	repayment_type = loan.repayment_type
-	loan_amount = loan.loan_amount
-	percentage_amount = loan.percentage_amount
-	fixed_amount = loan.fixed_amount
-	remaining_balance = loan_amount
-	print("before the employee salary info")
-	# Get gross salary
-	try:
-		print("Employee ID:", employee.employee_id)
-		salary_info = employee_salary_info.objects.get(employee_id=employee.employee_id)
-		gross_salary = salary_info.gross_salary
-	except employee_salary_info.DoesNotExist:
-		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Gross salary not found for employee."})
+    # Get employee gross salary
+    try:
+        salary_info = employee_salary_info.objects.get(employee_id=employee.employee_id)
+        gross_salary = salary_info.gross_salary
+    except employee_salary_info.DoesNotExist:
+        raise APIException(detail={"statuscode": 404, "status": "error", "message": "Gross salary not found."})
 
-	# Determine EMI amount
-	if repayment_type == 'Percentage':
-		if not percentage_amount:
-			raise APIException(detail={"statuscode": 400, "status": "error", "message": "Percentage EMI missing."})
-		emi_amount = round((gross_salary * percentage_amount) / 100, 2)
-	elif repayment_type == 'Fixed':
-		if not fixed_amount:
-			raise APIException(detail={"statuscode": 400, "status": "error", "message": "Fixed EMI amount missing."})
-		emi_amount = fixed_amount
-	else:
-		raise APIException(detail={"statuscode": 400, "status": "error", "message": "Invalid repayment type."})
+    # Get company pay cycle day
+    try:
+        company_setting = company_Settings.objects.get(company_id=employee.company_id)
+        pay_cycle_day = company_setting.pay_cycle_day or 1
+    except company_Settings.DoesNotExist:
+        raise APIException(detail={"statuscode": 404, "status": "error", "message": "Company settings not found."})
 
-	if emi_amount <= 0:
-		raise APIException(detail={"statuscode": 400, "status": "error", "message": "EMI amount must be greater than 0."})
+    # Determine EMI amount
+    if repayment_type == 'percentage':
+        if not percentage_amount:
+            raise APIException(detail={"statuscode": 400, "status": "error", "message": "Percentage EMI missing."})
+        emi_amount = round((gross_salary * percentage_amount) / 100, 2)
+    elif repayment_type == 'fixed':
+        if not fixed_amount:
+            raise APIException(detail={"statuscode": 400, "status": "error", "message": "Fixed EMI amount missing."})
+        emi_amount = fixed_amount
+    elif repayment_type == 'tenure':
+        if not tenure:
+            raise APIException(detail={"statuscode": 400, "status": "error", "message": "Tenure EMI missing."})
+        emi_amount = round(loan_amount / tenure, 2)
+        if emi_amount > gross_salary:
+            raise APIException(detail={"statuscode": 400, "status": "error", "message": "EMI amount > gross salary."})
+    else:
+        raise APIException(detail={"statuscode": 400, "status": "error", "message": "Invalid repayment type."})
 
-	# Generate repayments
-	payment_date = start_date or timezone.now()
-	repayments = []
+    if emi_amount <= 0:
+        raise APIException(detail={"statuscode": 400, "status": "error", "message": "EMI must be > 0."})
 
-	while remaining_balance > 0:
-		payment = emi_amount if remaining_balance >= emi_amount else remaining_balance
+    # Loop to generate EMIRepayment records
+    payment_date = approved_date
+    current_date = timezone.now().date()
+    emi_repayments = []
+    actual_repayments = []
 
-		repayments.append(
-			Repayment(
-				loan=loan,
-				payment_date=payment_date,
-				amount_paid=payment,
-				remaining_balance=remaining_balance - payment
-			)
-		)
+    while remaining_balance > 0:
+        # Set payment day of the month
+        year = payment_date.year
+        month = payment_date.month
 
-		remaining_balance -= payment
-		payment_date += relativedelta(months=1)
+        last_day = calendar.monthrange(year, month)[1]
+        day = min(pay_cycle_day, last_day)
 
-	try:
-		Repayment.objects.bulk_create(repayments)
-		print(f"Created {len(repayments)} repayment records.")
-	except Exception as e:
-		print("Error creating repayment records:", e)
-		raise APIException(detail={"statuscode": 500, "status": "error", "message": "Failed to create repayments."})
+        due_date = timezone.datetime(year, month, day).date()
 
-	return repayments
+        # Amount paid logic
+        payment = emi_amount if remaining_balance >= emi_amount else remaining_balance
 
+        # Determine EMI status
+        if due_date.day == current_date.day and due_date.month == current_date.month and due_date.year == current_date.year:
+            status = "Paid"
+            actual_repayments.append(
+                Repayment(
+                    loan=loan,
+                    payment_date=due_date,
+                    amount_paid=payment,
+                    remaining_balance=remaining_balance - payment
+                )
+            )
+        else:
+            status = "Upcoming"
+
+        emi_repayments.append(
+            EmiRepayments(
+                loan=loan,
+                payment_date=due_date,
+                amount=payment,
+                status=status,
+                remaining_balance=remaining_balance - payment
+            )
+        )
+
+        remaining_balance -= payment
+        payment_date += relativedelta(months=1)
+
+    # Save EMI schedule and current month's repayment
+    try:
+        EmiRepayments.objects.bulk_create(emi_repayments)
+        if actual_repayments:
+            Repayment.objects.bulk_create(actual_repayments)
+    except Exception as e:
+        raise APIException(detail={"statuscode": 500, "status": "error", "message": "Failed to save EMI or repayments."})
+
+    return {"emi_repayments_created": len(emi_repayments), "repayment_created": len(actual_repayments)}
 
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
@@ -193,9 +234,7 @@ def loan_create(request):
 @api_view(('GET',))
 def loan_detail_by_employee(request, pk):
 	loan = check_loan_exist(pk)
-	print(loan, "loan from the detail view")
 	serializer = loanSerializer(loan)
-	print(serializer.data, "serializer data")
 	return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 
@@ -217,30 +256,27 @@ def loan_delete(request, pk):
 @api_view(('PATCH',))
 def request_acceptance(request, pk):
 	loan = check_loan_exist(pk)
-	print(request.data, "data from request")
 	serializer = loanStatusUpdateSerializer(loan, data = request.data, partial = True)
 	if serializer.is_valid():
-		dataz = serializer.validated_data
+		data = serializer.validated_data
 
-		dataz['status'] = string.capwords(dataz['status'])
-		print(dataz['status'])
+		data['status'] = string.capwords(data['status'])
 
-		if dataz['status'] not in ['Accepted', 'Rejected']:
+		if data['status'] not in ['Accepted', 'Rejected']:
 			raise ValidationError(detail = {"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Invaild status"})
 		
-		if dataz['status'] == 'Accepted':
-			print("inside the accpt sts")
-			LoanDeduction.objects.filter(loan_id = pk).update(status = "Accepted", updated_at = datetime.now(),approved_date = datetime.now()) 
+		if data['status'] == 'Accepted':
+			LoanDeduction.objects.filter(loan_id = pk).update(status = "Accepted", start_date = datetime.now(), updated_at = datetime.now(), approved_date = datetime.now()) 
 			print("Calling create_repayment_records function...")  
 			create_repayment_records(pk) 
 			print("create_repayment_records function executed.")
 			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Loan accepted successfully and created repayment"}, status = status.HTTP_201_CREATED)
 		
-		if dataz['status'] == 'Rejected':
+		if data['status'] == 'Rejected':
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Rejected", updated_at = datetime.now())
 			return  Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan rejected successfully"}, status = status.HTTP_200_OK)
 		
-		if dataz['status'] == "Completed":
+		if data['status'] == "Completed":
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Completed", updated_at = datetime.now())
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Loan completed successfully"}, status = status.HTTP_200_OK)
 

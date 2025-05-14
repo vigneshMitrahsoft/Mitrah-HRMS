@@ -21,7 +21,6 @@ class get_serializer(serializers.Serializer):
 	address = serializers.CharField(required = True)
 	# role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
 	date_of_joining = serializers.DateField(required = True)
-	# type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 	employee_type = serializers.SerializerMethodField()
 	roles = serializers.SerializerMethodField()
 	gender = serializers.IntegerField(required = True)
@@ -29,6 +28,14 @@ class get_serializer(serializers.Serializer):
 	aadhar_number = serializers.IntegerField(required = False)
 	pan_number = serializers.CharField(required = False)
 	profile_picture_path = serializers.CharField(required = False)
+
+	def get_employee_type(self, obj):
+		if obj.type_id:
+			return {
+				"type_id": obj.type_id.type_id,  
+				"type": obj.type_id.type_name  
+			}
+		return None
 
 	def get_roles(self, obj):
 		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")

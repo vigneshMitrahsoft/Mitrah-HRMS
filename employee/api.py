@@ -56,7 +56,7 @@ def upload_image(id, encode_string, image_for):
 @IsAuthorized(['hr'])
 def get_employee(request,id):
 	try:
-		data = employee.objects.get(employee_id = id,is_active=True)
+		data = employee.objects.get(employee_id = id, is_active=True)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
