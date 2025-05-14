@@ -44,7 +44,6 @@ def overtime_detail(request,pk):
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
 def overtime_create(request):
-	print(request.data,"request data here")
 	employee_id = request.user.employee_id
 	employe = check_employee_exists(employee_id)
 	serializer = createOvertimeSerializer(data = request.data, context = {'employee' : employe})
@@ -74,15 +73,14 @@ def overtime_acceptance(request, pk):
 	overtime = check_overtime_exists(pk)
 	serializer = overtimeStatusUpdateSerializer(overtime, data = request.data, partial = True)
 	if serializer.is_valid():
-		dataz = serializer.validated_data
+		data = serializer.validated_data
 		
-		dataz['status'] = string.capwords(dataz['status'])
-		print(dataz['status'])
+		data['status'] = string.capwords(data['status'])
 
-		if dataz['status'] not in ['Accepted', 'Rejected']:
+		if data['status'] not in ['Accepted', 'Rejected']:
 			raise ValidationError(detail = {"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "Invaild status"})
 		
-		if dataz['status'] == 'Accepted':
+		if data['status'] == 'Accepted':
 			requested_hours = calculated_requested_hours(overtime)
 			employee_instance = overtime.employee_id
 			company_instance = employee_instance.company_id
@@ -108,7 +106,7 @@ def overtime_acceptance(request, pk):
 				leave_balance_instance.overtime_balance_hours += credited_hrs
 			leave_balance_instance.save()
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Overtime accepted successfully"}, status = status.HTTP_200_OK)
-		if dataz['status'] == 'Rejected':
+		if data['status'] == 'Rejected':
 			Overtime.objects.filter(id = pk).update(status = "Rejected", updated_by = employe.employee_id, updated_at = datetime.datetime.now())	
 			return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "Overtime rejected successfully"}, status = status.HTTP_200_OK)
 	return Response({"message" : serializer.errors, "status" : "error"}, status = status.HTTP_400_BAD_REQUEST)

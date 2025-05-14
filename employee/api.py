@@ -25,7 +25,7 @@ from auth.views import IsAuthorized
 @IsAuthorized(['hr'])
 def get_employee(request,id):
 	try:
-		data = employee.objects.get(employee_id = id,is_active=True)
+		data = employee.objects.get(employee_id = id, is_active=True)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = get_serializer(data)
