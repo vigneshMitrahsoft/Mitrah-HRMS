@@ -24,32 +24,31 @@ import base64
 import imghdr
 import os
 
-def get_profile_picture_path(request,employee_id, encode_string):
-	print(dict(request.META))
-	print("absolute url---------------->",request.build_absolute_uri())
-	print("jhk--->",request.build_absolute_uri('/')[:-1])
-
+def upload_image(id, encode_string, image_for):
 	base64_string = encode_string
-	if base64_string.startswith("data:image"):
-		base64_string = base64_string.split(",")[1]
-
 	try:
 		image_data = base64.b64decode(base64_string)
 		image_type = imghdr.what(None, image_data)
-		allowed_types = ['jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp']
+		allowed_types = ['jpeg', 'png','jpg']
 		if image_type not in allowed_types:
 			raise ValueError(f"Unsupported image type: {image_type}")
 		directory = os.path.join("assets", "profile_picture")
-		print(directory,"dir---->")
 		os.makedirs(directory, exist_ok=True)
 		file_name = f"{employee_id}_profile.{image_type}"
 		file_path = os.path.join(directory, file_name)
 		with open(file_path, "wb") as f:
-			f.write(image_data)
-		print(f"Image saved at: {file_path}")
+			f.write(image_data)	
+		for ext in allowed_types:
+			if ext != image_type:
+				old_file = os.path.join(directory, f"{employee_id}_profile.{ext}")
+				if os.path.exists(old_file):
+					os.remove(old_file)
+
+		return file_name
 
 	except Exception as e:
 		print("Error:", e)
+		return e
 
 
 @api_view(('GET',))
@@ -60,59 +59,60 @@ def get_employee(request,id):
 		data = employee.objects.get(employee_id = id,is_active=True)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
-	serialized_data = get_serializer(data)
-	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
+	serialized_data = get_serializer(data, context = {'request': request})
+	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr']) 
 def get_employees(request):
 	data = employee.objects.filter(is_active=True)
-	serialized_data = get_serializer(data,many = True)
+	serialized_data = get_serializer(data,many = True, context = {'request': request})
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('POST',))
 # @permission_classes((IsAuthenticated,))
 # @IsAuthorized(['hr'])
 def create_employee(request):
-	encode_string = ""
-	employee_id = 1
-	profile_picture_path = get_profile_picture_path(request,employee_id, encode_string)
-	
-
-	    #####original code #####
-	# token_user_id = request.user.employee_id
-	# serializer = create_serializer(data = request.data)
-	# if serializer.is_valid():
-	# 	data = serializer.validated_data
-	# 	plain_password = data.get('password')
-	# 	if plain_password:
-	# 		hashed_password = make_password(plain_password)   
-	# 		data['password'] = hashed_password 
-	# 	role_ids = data.pop('role_ids')
-	# 	if role_ids:
-	# 		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
-	# 	for role in role_ids:
-	# 		employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
+	data = request.data
+	token_user_id = request.user.employee_id
+	serializer = create_serializer(data = data)
+	if serializer.is_valid():
+		data = serializer.validated_data
+		plain_password = data.get('password')
+		if plain_password:
+			hashed_password = make_password(plain_password)   
+			data['password'] = hashed_password
+		role_ids = data.pop('role_ids')
+		if role_ids:
+			create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
+			if 'profile_picture' in request.data:
+				encode_string = request.data['profile_picture']
+				employee_id = create_employee.employee_id
+				profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
+				create_employee.profile_picture_path = profile_picture_path
+				create_employee.save()
+		for role in role_ids:
+			employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
 		
-	# 	company_data = company.objects.get(company_id = request.data['company_id'])
-	# 	company_settings_data = company_Settings.objects.get(company = company_data)
-	# 	leave_balance_data = {
-	# 		'employee_id':create_employee.employee_id,
-	# 		'sick_leave':company_settings_data.sick_leaves,
-	# 		'casual_leave':company_settings_data.casual_leaves,
-	# 		'permissions':company_settings_data.permission_hours,
-	# 		'compensation_leave': company_settings_data.leave_compensation
-	# 	}
-	# 	serializer = create_leavebalance_serializer(data=leave_balance_data)
-	# 	if serializer.is_valid():
-	# 		data = serializer.validated_data
-	# 		create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
-	# 	else:
-	# 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-	# 	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-	# else:
-	# 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		company_data = company.objects.get(company_id = request.data['company_id'])
+		company_settings_data = company_Settings.objects.get(company = company_data)
+		leave_balance_data = {
+			'employee_id':create_employee.employee_id,
+			'sick_leave':company_settings_data.sick_leaves,
+			'casual_leave':company_settings_data.casual_leaves,
+			'permissions':company_settings_data.permission_hours,
+			'compensation_leave': company_settings_data.leave_compensation
+		}
+		serializer = create_leavebalance_serializer(data=leave_balance_data)
+		if serializer.is_valid():
+			data = serializer.validated_data
+			create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+		else:
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+	else:
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
@@ -124,11 +124,17 @@ def update_employee(request, id):
 		employee_data = employee.objects.get(employee_id=id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
+	if 'profile_picture' in request.data:
+		encode_string = request.data['profile_picture']
+		employee_id = employee_data.employee_id
+		profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
+		data['profile_picture_path'] = profile_picture_path
+
 	serializer = update_serializer(employee_data, data=data, partial=True)
 	if serializer.is_valid():
 		
 		validated_data = serializer.validated_data
-		serializer.save(updated_by = token_user_id     )  
+		serializer.save(updated_by = token_user_id)  
  
 		validated_role_ids = [role.role_id for role in validated_data.get('role_ids', [])]
 

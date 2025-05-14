@@ -46,7 +46,7 @@ class employee(AbstractBaseUser, PermissionsMixin):
 	gender = models.IntegerField(null = True)
 	phone = models.IntegerField(null =True)
 	aadhar_number = models.IntegerField(null = True)
-	pan_number = models.IntegerField(null = True)
+	pan_number = models.CharField(null = True)
 	profile_picture_path = models.CharField(max_length = 100, null = True)
 	address = models.CharField(max_length=100)
 	# role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid')
