@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from corsheaders.defaults import default_headers
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,9 +28,6 @@ SECRET_KEY = "django-insecure-)@$*#t(2*4i)ddd-#7t=4#tqv-ny7dj37)fsps50bham6)iu+@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +37,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist", # Required for token blacklisting
+	"corsheaders",
     "employee",
     "loan",
     "company",
@@ -46,19 +48,22 @@ INSTALLED_APPS = [
     "shift",
     "shifttype",
 	"overtime",
-    "rest_framework",
-    "rest_framework_simplejwt",
-    "rest_framework_simplejwt.token_blacklist", # Required for token blacklisting
     "leave",  
     "holiday",
 	"payslips"
 ]
 
+
+ALLOWED_HOSTS = []
+
+CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
+CORS_ALLOWED_METHODS = ('POST', 'GET', 'PATCH', 'PUT', 'DELETE', 'OPTIONS')
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

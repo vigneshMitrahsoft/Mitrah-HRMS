@@ -1,4 +1,4 @@
-from datetime import datetime,timedelta
+from datetime import datetime
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from .models import company, company_Settings
@@ -27,29 +27,26 @@ def specific_company(request, pk):
 
 @api_view(('POST',))
 def company_create(request):
-	data = request.data
-	hours = data['permission_hours']
-	seconds = int(hours * 3600)
-	time_conversion = str(timedelta(seconds=seconds))
-	data['permission_hours'] = time_conversion
 	serializer = companyCreateSerializer(data = request.data)
 	if serializer.is_valid():
-		datas = serializer.validated_data
-		comp = company.objects.create(company_name = datas['company_name'], address = datas['address'], created_at = datetime.now())
+		data = serializer.validated_data
+		comp = company.objects.create(company_name = data['company_name'], address = data['address'], created_at = datetime.now())
 		company_Settings.objects.create(
-			HRA = datas['hra'],
-			employer_ESI = datas['employer_ESI'],
-			employee_ESI = datas['employee_ESI'], 
-			employer_PF = datas['employer_PF'],
-			employee_PF = datas['employee_PF'],
-			leave_compensation = datas['leave_compensation'],
-			basic_work_hours = datas['basic_work_hours'],
-			sick_leaves = datas['sick_leaves'],
-			casual_leaves = datas['casual_leaves'],
-			basic_pay = datas['basic_pay'],
-			other_allowances = datas['other_allowances'],
-			permission_hours = datas['permission_hours'],
-			company_id = comp.company_id)
+			company_id = comp.company_id,
+			HRA = data['hra'],
+			employer_ESI = data['employer_ESI'],
+			employee_ESI = data['employee_ESI'], 
+			employer_PF = data['employer_PF'],
+			employee_PF = data['employee_PF'],
+			leave_compensation = data['leave_compensation'],
+			basic_work_hours = data['basic_work_hours'],
+			sick_leaves = data['sick_leaves'],
+			casual_leaves = data['casual_leaves'],
+			basic_pay = data['basic_pay'],
+			other_allowances = data['other_allowances'],
+			permission_hours = data['permission_hours'],
+			pay_cycle_day = data['pay_cycle_day']
+		)
 		return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "company created successfully"}, status = status.HTTP_201_CREATED)
 	return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 

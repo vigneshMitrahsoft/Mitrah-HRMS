@@ -5,3 +5,4 @@ djangorestframework-simplejwt
 python-dateutil
 pandas
 openpyxl
+django-cors-headers
