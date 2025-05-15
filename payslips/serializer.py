@@ -8,7 +8,6 @@ class PayslipStatusUpdateSerializer(serializers.Serializer):
         status = data.get('status').strip().lower()
         if status not in ('pending','finalized'):
             raise serializers.ValidationError("Status can only be pending, approved or rejected")
-        # print(data, "data form serializer")
         return data
     
 
