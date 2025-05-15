@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from .models import company
+
 class companySerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = company
 		fields = '__all__'
+
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
@@ -41,6 +43,7 @@ class companyCreateSerializer(serializers.Serializer):
 			raise serializers.ValidationError(errors)
 
 		return data
+
 class companyUpdateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()

@@ -35,17 +35,18 @@ def IsAuthorized(required_roles):
 				if not employee_id:
 					return Response({"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
 
-				employee_rolez = list(employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True))
-				employee_rolez = [role.lower() for role in employee_rolez]  # Convert to lowercase
-
-				if not employee_rolez:
+				# roles = list(employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True))
+				roles = [role.lower() for role in employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True)]
+				
+				if not roles:  
 					return Response({"detail": "Employee has no assigned roles"}, status=status.HTTP_403_FORBIDDEN)
 
-				if not any(role in employee_rolez for role in required_roles):
+				if not any(role in roles for role in required_roles):
+					print("employee_",roles)
 					return Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
 				return view_func(request, *args, **kwargs)
-
+			
 			except Exception as e:
 				return Response({"detail": f"Authorization error: {str(e)}"}, status=status.HTTP_401_UNAUTHORIZED)
 		return _wrapped_view
