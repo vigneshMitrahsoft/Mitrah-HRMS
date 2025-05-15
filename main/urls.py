@@ -19,8 +19,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 app = ([
-    path('employees/', include('employee.urls')),
-    path('loans/', include('loan.urls')),
+    path("employees/", include('employee.urls')),
+    path("loans/", include('loan.urls')),
     path("attendance/", include('attendance.urls')),
     path("auth/", include('auth.urls')),
     path("company/",include('company.urls')),
@@ -29,7 +29,8 @@ app = ([
     path("overtime/", include('overtime.urls')), 
     path("leave/", include('leave.urls')),
     path("holiday/", include('holiday.urls')),
-    path("payslips/", include('payslips.urls'))
+    path("payslips/", include('payslips.urls')),
+	path("dashboard/", include('dashboard.urls'))
 ])
 
 urlpatterns = [
