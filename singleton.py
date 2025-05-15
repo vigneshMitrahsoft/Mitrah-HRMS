@@ -1,6 +1,7 @@
 from main import settings
 import psycopg2
 from datetime import datetime
+from django.contrib.auth.hashers import make_password
 
 data = settings.DATABASES['default']
 conn = psycopg2.connect(
@@ -9,7 +10,13 @@ conn = psycopg2.connect(
 	dbname = data['NAME'],
 	user = data['USER'],
 	password = data['PASSWORD']
+	
 )
+# plain_password = "balaji@123"
+# if plain_password:
+# 	hashed_password = make_password(plain_password)   
+# 	plain_password = hashed_password 
+# print("plain------>",plain_password)
 cursor = conn.cursor()
 cursor.execute(f"INSERT INTO company(company_name, address, created_at, updated_at, updated_by,is_active)VALUES('testing','testing','{datetime.now()}','2025-05-06 22:16:05.786801+05:30',1,True)RETURNING company_id")
 company_id = cursor.fetchone()[0]
