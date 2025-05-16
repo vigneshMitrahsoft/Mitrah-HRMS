@@ -9,42 +9,62 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')  # 🔁 Change this to your actual settings module path
 django.setup()
 
-# Now you can use make_password
 plain_password = 'hr@rtesting'
 hashed_password = make_password(plain_password)
 
 data = settings.DATABASES['default']
 conn = psycopg2.connect(
-	host = data['HOST'],
-	port = data['PORT'],
-	dbname = data['NAME'],
-	user = data['USER'],
-	password = data['PASSWORD']
-	
-)
+		host = data['HOST'],
+		port = data['PORT'],
+		dbname = data['NAME'],
+		user = data['USER'],
+		password = data['PASSWORD']
+	)
+
+print(conn)
 
 cursor = conn.cursor()
-cursor.execute(f"INSERT INTO company(company_name, address, created_at, updated_at, updated_by,is_active)VALUES('testing','testing','{datetime.now()}','2025-05-06 22:16:05.786801+05:30',1,True)RETURNING company_id")
+cursor.execute ("""INSERT INTO company (company_name, address, created_at, updated_at, updated_by,is_active)
+				VALUES(%s, %s, %s, %s, %s, %s)RETURNING company_id""",
+				('testing','testing',datetime.now(),'2025-05-06 22:16:05.786801+05:30',1,True))
 company_id = cursor.fetchone()[0]
-cursor.execute(f"INSERT INTO company_settings(hra, employer_esi, employee_esi, employer_pf, employee_pf, leave_compensation, basic_work_hours, sick_leaves, casual_leaves, basic_pay, other_allowances, permission_hours, pay_cycle_day, company_id) VALUES(40,3.25,0.75,12,12,1.00,8.30,2,1,100,40,1.5,12,{company_id})")
-cursor.execute("INSERT INTO roles(role_name)VALUES('Admin'),('HR'),('HR Admin'),('Staff')")
-cursor.execute("INSERT INTO employee_type(type_name)VALUES('Full Time'),('Part Time'),('Contract') RETURNING type_id")
+
+cursor.execute("""INSERT INTO company_settings(hra, employer_esi, employee_esi, employer_pf, employee_pf, leave_compensation, basic_work_hours, sick_leaves, casual_leaves, basic_pay, other_allowances, permission_hours, pay_cycle_day, company_id)
+			    VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+				(40,3.25,0.75,12,12,1.00,8.30,2,1,100,40,1.5,12,company_id))
+
+cursor.execute(""" INSERT INTO roles (role_name) 
+               VALUES (%s), (%s), (%s), (%s)""", 
+			   ('Admin', 'HR', 'HR Admin', 'Staff'))
+
+cursor.execute("""INSERT INTO employee_type(type_name)
+			   VALUES (%s),(%s),(%s)RETURNING type_id""",
+			   ('Full Time','Part Time','Contract'))
+
 type_id = cursor.fetchone()[0]
-cursor.execute(f"INSERT INTO employee(company_id, first_name, last_name, email, password, date_of_birth, address, date_of_joining, type_id, created_at, updated_at, created_by, updated_by, is_active, is_superuser)VALUES({company_id},'hr','testing','hr.bala6@gmail.com','{hashed_password}', '1998-01-01','testing','2024-01-01',{type_id},'{datetime.now()}','2025-05-06 22:16:05.786801+05:30',1,1,true,false)")
-cursor.execute("SELECT employee_id FROM employee WHERE email = 'hr.bala6@gmail.com'")
+
+cursor.execute("""INSERT INTO employee(company_id, first_name, last_name, email, password, date_of_birth, address, date_of_joining, type_id, created_at, updated_at, created_by, updated_by, is_active, is_superuser)
+			   VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)RETURNING employee_id""",
+			   (company_id,'hr','testing','hr.bala8@gmail.com',hashed_password, '1998-01-01','testing','2024-01-01',type_id,datetime.now(),'2025-05-06 22:16:05.786801+05:30',1,1,True,False))
+
+email = "hr.bala8@gmail.com"
+cursor.execute("SELECT employee_id FROM employee WHERE email = %s",(email,))
 employee_id = cursor.fetchone()[0]
 
-
-query = f"""
-INSERT INTO employee_roles (
-    employee_id, role_id, is_active, created_at, updated_at, created_by, updated_by
-)
-VALUES 
-    ({employee_id}, 5, TRUE, '{datetime.now()}', '{datetime.now()}', 1, 1),
-    ({employee_id}, 6, TRUE, '{datetime.now()}', '{datetime.now()}', 1, 1)
+query = """
+    INSERT INTO employee_roles (
+        employee_id, role_id, is_active, created_at, updated_at, created_by, updated_by
+    )
+    VALUES 
+        (%s, %s, %s, %s, %s, %s, %s),
+        (%s, %s, %s, %s, %s, %s, %s)
 """
-cursor.execute(query)
+params = (
+    employee_id, 5, True, datetime.now(), datetime.now(), 1, 1,
+    employee_id, 6, True, datetime.now(), datetime.now(), 1, 1
+)
 
+cursor.execute(query, params)
 
 conn.commit()
 cursor.close()
