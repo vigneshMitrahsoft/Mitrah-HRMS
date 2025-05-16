@@ -20,9 +20,6 @@ conn = psycopg2.connect(
 		user = data['USER'],
 		password = data['PASSWORD']
 	)
-
-print(conn)
-
 cursor = conn.cursor()
 cursor.execute ("""INSERT INTO company (company_name, address, created_at, updated_at, updated_by,is_active)
 				VALUES(%s, %s, %s, %s, %s, %s)RETURNING company_id""",
