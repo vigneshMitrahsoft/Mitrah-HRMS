@@ -3,7 +3,7 @@ from employee.models import employee
 
 class employee_attendance(models.Model):
 	attendance_id = models.BigAutoField(primary_key = True)
-	employee_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'employeeid')
+	employee_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'employeeid', db_column = 'employee_id')
 	date = models.DateField()
 	check_in = models.DateTimeField(null = True)
 	check_out = models.DateTimeField(null=True)
@@ -19,7 +19,7 @@ class employee_attendance(models.Model):
 
 class attendance_entries(models.Model):
 	entry_id = models.BigAutoField(primary_key = True)
-	attendance_id = models.ForeignKey(employee_attendance, on_delete=models.DO_NOTHING, related_name = 'attendanceid')
+	attendance_id = models.ForeignKey(employee_attendance, on_delete=models.DO_NOTHING, related_name = 'attendanceid', db_column = 'attendance_id')
 	checkin_entry = models.DateTimeField()
 	checkout_entry = models.DateTimeField(null = True)
 
@@ -28,8 +28,8 @@ class attendance_entries(models.Model):
 
 class employees_attendance_info(models.Model):
 	info_id = models.BigAutoField(primary_key = True)
-	employee_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'attendanceinfo_employeeid')
-	attendance_id = models.ForeignKey(employee_attendance, on_delete=models.DO_NOTHING, related_name = 'attendance_info_id')
+	employee_id = models.ForeignKey(employee, on_delete=models.DO_NOTHING, related_name = 'attendanceinfo_employeeid', db_column = 'employee_id')
+	attendance_id = models.ForeignKey(employee_attendance, on_delete=models.DO_NOTHING, related_name = 'attendance_info_id', db_column = 'attendance_id' )
 	date = models.DateField()
 	status = models.CharField(max_length = 100)
 	action_by = models.IntegerField(null = True)
