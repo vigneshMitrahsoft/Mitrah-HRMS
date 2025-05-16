@@ -34,7 +34,8 @@ app = ([
     path("leave/", include('leave.urls')),
     path("holiday/", include('holiday.urls')),
     path("payslips/", include('payslips.urls')),
-	path("dashboard/", include('dashboard.urls'))
+	path("dashboard/", include('dashboard.urls')),
+    path("register/", include('subscription.urls'))
 ])
 
 urlpatterns = [
