@@ -49,7 +49,7 @@ class employee(AbstractBaseUser, PermissionsMixin):
 	pan_number = models.CharField(null = True)
 	profile_picture_path = models.CharField(max_length = 100, null = True)
 	address = models.CharField(max_length=100)
-	# role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid')
+	# role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid', db_column = 'role_id')
 	date_of_joining = models.DateField()
 	type_id = models.ForeignKey(employee_type, on_delete=models.DO_NOTHING, related_name = 'employee_typeid', db_column = 'type_id')
 	employee_last_date = models.DateTimeField(default=None,null=True)
@@ -73,8 +73,8 @@ class employee(AbstractBaseUser, PermissionsMixin):
 		db_table = 'employee'
 
 class employee_roles(models.Model):
-	employee = models.ForeignKey('employee', on_delete=models.CASCADE)
-	role = models.ForeignKey('roles', on_delete=models.CASCADE)
+	employee = models.ForeignKey('employee', on_delete=models.CASCADE, db_column = 'employee_id')
+	role = models.ForeignKey('roles', on_delete=models.CASCADE, db_column = 'role_id')
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)

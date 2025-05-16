@@ -17,7 +17,7 @@ class company(models.Model):
 
 class company_Settings(models.Model):
     company_settings_id = models.BigAutoField(primary_key=True)
-    company = models.ForeignKey(company,on_delete=models.CASCADE)
+    company = models.ForeignKey(company,on_delete=models.CASCADE, db_column = 'company_id')
     HRA = models.FloatField(blank=True, null=True, db_column = 'hra')
     basic_pay = models.FloatField(blank=True, null=True)
     other_allowances = models.FloatField(blank=True, null=True)

@@ -47,6 +47,15 @@ For example, we need to replaced default database credential by our local postgr
 		}
 	}
 ```
+
+```
+	PASSWORD_HASHERS = [ 
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.Argon2PasswordHasher',
+        'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    ]
+```
 Run below command to create company initially,
 
 ```

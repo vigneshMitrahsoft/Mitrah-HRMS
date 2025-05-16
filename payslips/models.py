@@ -6,7 +6,7 @@ from employee.models import employee
 
 class Payslip(models.Model):
 	payslip_id = models.AutoField(primary_key=True)
-	employee = models.ForeignKey(employee, on_delete=models.CASCADE)
+	employee = models.ForeignKey(employee, on_delete=models.CASCADE, db_column = 'employee_id')
 	month = models.CharField(max_length=20)
 	year = models.IntegerField(blank=True, null=True)
 	basic_pay = models.FloatField(blank=True, null=True)

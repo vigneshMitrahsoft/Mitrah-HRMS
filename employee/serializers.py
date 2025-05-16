@@ -100,7 +100,7 @@ class update_serializer(serializers.ModelSerializer):
 	class Meta:
 		model = employee
 		fields = [
-			'company_id', 'first_name', 'last_name', 'email', 'password','gender','phone','aadhar_number','pan_number',
+			'company_id', 'first_name', 'last_name', 'email','gender','phone','aadhar_number','pan_number',  # remove password field
 			'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id', 'updated_by','profile_picture_path'
 		]
 
