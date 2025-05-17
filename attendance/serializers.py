@@ -32,20 +32,27 @@ class atttendance_info_post_serializer(serializers.Serializer):
 	date = serializers.DateField(required = True)
 	status = serializers.CharField(required = True)
 
-class get_employee_attendance_serializer(serializers.Serializer):
-	date = serializers.DateField(required = True)
-	day = serializers.CharField(required = True)
-	is_week_off = serializers.BooleanField(required = False)
-	attendance_status = serializers.CharField(required = False)
-	leave_status = serializers.CharField(required = False)
-	check_in = serializers.DateTimeField(required = False)
-	check_out = serializers.DateTimeField(required = False)
-	effective_hours = serializers.TimeField(required = False)
-	total_hours = serializers.TimeField(required = False)
-	session = serializers.CharField(required = False)
-	leave_type = serializers.CharField(required = False)
-	attendance_id = serializers.IntegerField(required = False)
-	# attendance_id = serializers.PrimaryKeyRelatedField(queryset=employee_attendance.objects.all(), required=False)
+# class get_employee_attendance_serializer(serializers.Serializer):
+# 	date = serializers.DateField(required = True)
+# 	day = serializers.CharField(required = True)
+# 	is_week_off = serializers.BooleanField(required = False)
+# 	attendance_status = serializers.CharField(required = False)
+# 	leave_status = serializers.CharField(required = False)
+# 	check_in = serializers.DateTimeField(required = False)
+# 	check_out = serializers.DateTimeField(required = False)
+# 	effective_hours = serializers.TimeField(required = False)
+# 	total_hours = serializers.TimeField(required = False)
+# 	session = serializers.CharField(required = False)
+# 	leave_type = serializers.CharField(required = False)
+# 	attendance_id = serializers.IntegerField(required = False)
+# 	holiday_occasion = serializers.CharField(required = False)
+# 	permissions = serializers.SerializerMethodField(required = False)
+# 	# attendance_id = serializers.PrimaryKeyRelatedField(queryset=employee_attendance.objects.all(), required=False)
+# 	def get_permissions(self, data):
+# 		return {
+# 			'start_time': data['permission_start_time'],
+# 			'end_time': data['permission_end_time']
+# 		}
 
 class attendance_entry_model(serializers.ModelSerializer):
 	checkin = serializers.DateTimeField(source = 'checkin_entry', required = False, allow_null=True)
@@ -68,3 +75,27 @@ class get_attendance_info_serializer(serializers.Serializer):
 	effective_hours = serializers.TimeField(required = False, allow_null=True)
 	total_hours = serializers.TimeField(required = False, allow_null=True)
 	entries = attendance_entry_model(many = True,allow_null=True)
+
+
+class LeaveSerializer(serializers.Serializer):
+    session = serializers.CharField(required=False)
+    leave_type = serializers.CharField(required=False)
+
+class PermissionSerializer(serializers.Serializer):
+    start_time = serializers.TimeField(required=False)
+    end_time = serializers.TimeField(required=False)
+
+class get_employee_attendance_serializer(serializers.Serializer):
+    date = serializers.DateField(required=True)
+    day = serializers.CharField(required=True)
+    is_week_off = serializers.BooleanField(required=False)
+    attendance_status = serializers.CharField(required=False)
+    leave_status = serializers.CharField(required=False)
+    check_in = serializers.CharField(required=False)
+    check_out = serializers.CharField(required=False)
+    effective_hours = serializers.TimeField(required=False)
+    total_hours = serializers.TimeField(required=False)
+    attendance_id = serializers.IntegerField(required=False)
+    holiday_occasion = serializers.CharField(required=False)
+    permissions = PermissionSerializer(many=True, required=False)
+    leaves = LeaveSerializer(many=True, required=False)

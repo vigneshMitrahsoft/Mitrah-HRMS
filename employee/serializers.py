@@ -29,13 +29,13 @@ class get_serializer(serializers.Serializer):
 	pan_number = serializers.CharField(required = False)
 	profile_picture_path = serializers.CharField(required = False)
 
-	def get_employee_type(self, obj):
-		if obj.type_id:
-			return {
-				"type_id": obj.type_id.type_id,  
-				"type": obj.type_id.type_name  
-			}
-		return None
+	# def get_employee_type(self, obj):
+	# 	if obj.type_id:
+	# 		return {
+	# 			"type_id": obj.type_id.type_id,  
+	# 			"type": obj.type_id.type_name  
+	# 		}
+	# 	return None
 
 	def get_roles(self, obj):
 		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
