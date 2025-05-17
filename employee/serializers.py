@@ -21,13 +21,13 @@ class get_serializer(serializers.Serializer):
 	address = serializers.CharField(required = True)
 	# role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
 	date_of_joining = serializers.DateField(required = True)
-	employee_type = serializers.SerializerMethodField()
-	roles = serializers.SerializerMethodField()
 	gender = serializers.IntegerField(required = True)
-	phone = serializers.IntegerField(required = True)
-	aadhar_number = serializers.IntegerField(required = False)
+	phone = serializers.CharField(required = True)
+	aadhar_number = serializers.CharField(required = False)
 	pan_number = serializers.CharField(required = False)
 	profile_picture_path = serializers.CharField(required = False)
+	employee_type = serializers.SerializerMethodField()
+	roles = serializers.SerializerMethodField()
 
 	# def get_employee_type(self, obj):
 	# 	if obj.type_id:
@@ -40,27 +40,30 @@ class get_serializer(serializers.Serializer):
 	def get_roles(self, obj):
 		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
 		return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
-	
+
 	def get_employee_type(self,obj):
 		type = employee_type.objects.filter(type_id = obj.type_id.type_id)
 		return [{'type_id': type.type_id, 'type_name': type.type_name} for type in type]
-	
+
 	def to_representation(self, instance):
 		request = self.context['request']
 		data = super().to_representation(instance)
-		gender_map = {
-			0: "Female",	
-			1: "Male",
-		}
-		gender_value = data.get("gender")
-		data["gender"] = gender_map.get(gender_value, "Not defined")
+		# gender_map = {
+		# 	0: "Female",
+		# 	1: "Male",
+		# }
+		# gender_value = data.get("gender")
+		# data["gender"] = gender_map.get(gender_value, 0)
 		request_url = request.build_absolute_uri('/')[:-1]
 		file_directory = '/assets/profile_picture/'
 		if data['profile_picture_path'] != None:
 			data['profile_picture_path'] = request_url + file_directory + data['profile_picture_path']
 
+		# overwrite None values with empty strings
+		data = {key: "" if value is None else value for key, value in data.items()}
+
 		return data
-	
+
 class create_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
 	first_name = serializers.CharField(required = True)
@@ -79,7 +82,7 @@ class create_serializer(serializers.Serializer):
 	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
 	def validate(self,data):
-		data['email']= data['email'].lower()
+		data['email'] = data['email'].lower()
 		user_exists = employee.objects.filter(email=data['email']).exists()
 		if user_exists:
 			raise serializers.ValidationError({"error":"Email already exists."})
@@ -89,20 +92,40 @@ class create_serializer(serializers.Serializer):
 			raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
 		return data
 	
-class update_serializer(serializers.ModelSerializer):
+class update_serializer(serializers.Serializer):
+	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
+	first_name = serializers.CharField(required = True)
+	last_name = serializers.CharField(required = True)
+	email = serializers.EmailField(required = True)
+	password = serializers.CharField(required = False)
+	date_of_birth = serializers.DateField(required = True)
+	gender = serializers.IntegerField(required = True)
+	phone = serializers.IntegerField(required = True)
+	aadhar_number = serializers.IntegerField(required = False)
+	pan_number = serializers.CharField(required = False)
+	profile_picture_path = serializers.CharField(required = False)
+	address = serializers.CharField(required = False)
+	date_of_joining = serializers.DateField(required = False)
+	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required = True)
 	# This will directly accept a list of role IDs (primary keys)
 	role_ids = serializers.ListField(
-		child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()),
-		required=False,
-		allow_empty=True
+		child = serializers.PrimaryKeyRelatedField(
+			queryset = roles.objects.all()
+		),
+		required = True
 	)
 
-	class Meta:
-		model = employee
-		fields = [
-			'company_id', 'first_name', 'last_name', 'email', 'password','gender','phone','aadhar_number','pan_number',
-			'date_of_birth', 'address', 'role_ids', 'date_of_joining', 'type_id', 'updated_by','profile_picture_path'
-		]
+	def validate(self,data):
+		data['email'] = data['email'].lower()
+		user_exists = employee.objects.filter(email = data['email']).exclude(employee_id = self.instance.employee_id).exists()
+		if user_exists:
+			raise serializers.ValidationError({"error": "Email already exists."})
+		if len(str(data['phone'])) != 10:
+			raise serializers.ValidationError({"error": "Phone number must contain 10 digits"})
+		if data['gender'] not in [0,1]:
+			raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
+
+		return data
 
 	def validate_role_ids(self, value):
 		# Ensure there are no duplicates in the provided role IDs

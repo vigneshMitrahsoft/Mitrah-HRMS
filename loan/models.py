@@ -7,7 +7,7 @@ from employee.models import employee
 
 class LoanDeduction(models.Model):
 	loan_id = models.AutoField(primary_key=True)
-	employee = models.ForeignKey(employee, on_delete=models.CASCADE, default= 1)
+	employee = models.ForeignKey(employee, on_delete=models.CASCADE, default= 1, db_column = 'employee_id')
 	# employee_id = models.ForeignKey(blank=True, null=True)
 	loan_type = models.CharField(max_length=100)
 	loan_amount = models.FloatField(blank=True)
@@ -32,7 +32,7 @@ class LoanDeduction(models.Model):
 
 class Repayment(models.Model):
 	repayment_id = models.AutoField(primary_key=True)
-	loan = models.ForeignKey(LoanDeduction, on_delete=models.CASCADE)
+	loan = models.ForeignKey(LoanDeduction, on_delete=models.CASCADE, db_column = 'loan_id')
 	payment_date = models.DateTimeField(blank=True, null=True)
 	amount_paid = models.FloatField(blank=True)
 	remaining_balance = models.FloatField(blank=True)
