@@ -15,6 +15,17 @@ class get_leavebalance_serializer(serializers.ModelSerializer):
 		model = employee_leave_balances
 		fields = "__all__"
 
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+		permission = data['permission_hours']
+		try:
+			hours = int(permission)
+			minutes = round((permission - hours) * 60)
+			data['permission_hours'] = f"{hours} hour and {minutes} minutes"
+		except:
+			pass
+		return data
+
 class create_employee_applied_leaves_days(serializers.Serializer):
 	# applied_leave_request_id = serializers.PrimaryKeyRelatedField(queryset=employee_applied_leaves.objects.all(), required=True)
 	leave_date = serializers.DateField(required = True)

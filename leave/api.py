@@ -111,7 +111,7 @@ def get_employees_leave_balances(request):
 @permission_classes((IsAuthenticated,))
 def get_employee_leave_balances(request,id):
 	try:
-		data = employee_leave_balances.objects.get(leave_balance_id = id)
+		data = employee_leave_balances.objects.get(employee_id = id)
 	except employee_leave_balances.DoesNotExist:
 		return Response({"detail": "Employee leave balance not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = get_leavebalance_serializer(data)
