@@ -199,22 +199,7 @@ def delete_employee(request, id):
 	employee_delete.save()
 	return Response({"statuscode": status.HTTP_200_OK, "status": "success", "message": " Deleted successfully."}, status=status.HTTP_200_OK)
 
-@api_view(('POST',))
-def login(request):
-	email = request.data.get('email')
-	password = request.data.get('password')
 
-	user = authenticate(request, username=email, password=password)
-	if user:
-		# return Response({"message": "Login successful"})
-		refresh = RefreshToken.for_user(user)
-		return Response({
-			'access': str(refresh.access_token),
-			'refresh': str(refresh),
-		})
-	else:   
-		return Response({"message": "Invalid credentials"}, status=401)
-	
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
@@ -262,41 +247,3 @@ def get_employee_salary(request,id):
 		return Response({"detail": "Employee salary not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = create_salary_info_serializer(data)
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
-
-@api_view(('GET',))
-def calculate_employee_salary(request,id):
-	employee_instance = employee.objects.get(employee_id = id)
-	# company_instance = company.objects.get(company_id = employee_instance.company_id.company_id)
-	employee_company = company_Settings.objects.get(company = employee_instance.company_id.company_id)
-	employee_salary = employee_salary_info.objects.get(employee_id = employee_instance)
-	ctc = employee_salary.gross_salary + employee_salary.variable_pay
-	basic_pay = ctc*(employee_company.basic_pay / 100)
-	hra = basic_pay*(employee_company.HRA / 100)
-	other_allowance = basic_pay*(employee_company.other_allowances / 100)
-	employee_pf = employee_company.employee_PF
-	employee_esi = employee_company.employee_ESI
-	employee_pf_deduction = (employee_pf/100) * basic_pay
-	employee_esi_deduction = (employee_esi/100)* employee_salary.gross_salary
-	company_audit_date = "31"  #TODO: need to get the value from company_settings
-	today = datetime.today()
-	month = today.month
-	year = today.year
-	date = str(company_audit_date) + "-" + str(month) + "-" + str(year)
-	given_date = datetime.strptime(date, "%d-%m-%Y").date()
-	start_date = given_date - relativedelta(months=1)
-	end_date = given_date
-	weekday_count = 0
-	current_date = start_date
-	while current_date <= end_date:
-		if current_date.weekday() < 5: 
-			weekday_count += 1
-		current_date += timedelta(days=1)
-	start_date = start_date.strftime("%Y-%m-%d")
-	end_date = end_date.strftime("%Y-%m-%d")
-	leave_dates = employees_attendance_info.objects.filter(date__range = [start_date,end_date],status = 'Absent')
-	company_holidays = holiday.objects.filter(holiday_date__range = [start_date, end_date])
-	total_working_day_of_month = weekday_count - len(company_holidays)
-	employee_working_day = total_working_day_of_month
-	employee_lop = (employee_salary.gross_salary / total_working_day_of_month) * len(leave_dates)
-	deduction = employee_esi_deduction + employee_pf_deduction + employee_lop
-	net_salary = (basic_pay + hra + other_allowance) - deduction
