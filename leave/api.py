@@ -3,7 +3,7 @@ from .models import employee_leave_balances,employee_applied_leave_days, employe
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
-from .serializers import create_leavebalance_serializer, get_leavebalance_serializer, create_employee_applied_leaves, create_employee_applied_leaves_days, get_employee_apllied_leaves,get_employee_applied_leave,create_applied_permission
+from .serializers import create_leavebalance_serializer, get_leavebalance_serializer, create_employee_applied_leaves, create_employee_applied_leaves_days, get_employee_apllied_leaves,get_employee_applied_leave,create_applied_permission, update_applied_permission
 from django.db.models import Prefetch
 from datetime import datetime, timedelta
 from attendance.api import convert_timedelta_to_time, add_effective_time
@@ -58,11 +58,13 @@ def check_employee_leave_availability(employee_leave_info):
 	
 	return Total_days, leave_balance 
 
-def check_existing_permission(data,id):
-	check = employee_applied_permissions.objects.filter(employee = data['employee'], permission_date = data['permission_date']).exclude(permission_id = id)
-	
+def check_existing_permission(data,id = 0):
+	if id == 0 :
+		check = employee_applied_permissions.objects.filter(employee = data['employee'], permission_date = data['permission_date'])
+	else:
+		check = employee_applied_permissions.objects.filter(employee = data['employee'], permission_date = data['permission_date']).exclude(permission_id = id)
 	start_time = datetime.strptime(data['start_time'], "%H:%M").time()
-	end_time = datetime.strptime(data['end_time'], "%H:%M").time()
+	# end_time = datetime.strptime(data['end_time'], "%H:%M").time()
 	if check:
 		for check_value in check:
 			print("hiii-->",check_value.employee,check_value.start_time, check_value.end_time)
@@ -325,31 +327,49 @@ def apply_employee_permission(request):
 def update_employee_permission(request,id):
 	token_user_id = request.user.employee_id
 	data = request.data
-	if data['end_time'] < data['start_time']:
-		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"End date msut be greater"}, status=status.HTTP_400_BAD_REQUEST)
-	check_exist_permission  = check_existing_permission(data,id)
-	if check_exist_permission:
-		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
-	applied_permission = employee_applied_permissions.objects.get(permission_id = id)
-	employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
-	applied_hours = calculate_applied_hours(data['start_time'], data['end_time'])
-	applied_employee_start_time = applied_permission.start_time
-	applied_employee_end_time = applied_permission.end_time
-	applied_employee_start_time = applied_employee_start_time.strftime("%H:%M")
-	applied_employee_end_time = applied_employee_end_time.strftime("%H:%M")
-	previous_hours = calculate_applied_hours(applied_employee_start_time, applied_employee_end_time)
-	balance_duration = employee_permission_balance.permission_hours + previous_hours
-	if applied_hours <= balance_duration:
-		serializer = create_applied_permission(applied_permission, data = data, partial = True)
+	if 'status' in data:
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
+		if data['status'] == 'Cancelled':
+			applied_permission_start_time = applied_permission.start_time
+			applied_permission_end_time = applied_permission.end_time
+			applied_permission_start_time = applied_permission_start_time.strftime("%H:%M")
+			applied_permission_end_time = applied_permission_end_time.strftime("%H:%M")
+			applied_hours = calculate_applied_hours(applied_permission_start_time, applied_permission_end_time)
+		serializer = update_applied_permission(applied_permission, data = data, partial = True)
 		if serializer.is_valid():
-			serializer.save(updated_by = token_user_id)
-		value = balance_duration - applied_hours
-		employee_permission_balance.permission_hours = value
-		employee_permission_balance.updated_by = token_user_id
-		employee_permission_balance.save()
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
-	else:
-		return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
+			serializer.save(updated_by = request.user.employee_id)
+			employee_permission_balance.permission_hours = employee_permission_balance.permission_hours + applied_hours
+			employee_permission_balance.save()
+
+	if ('start_time' in data) and ('end_time' in data):
+		print("hiiii--->",data['start_time'],data['end_time'])
+		if data['end_time'] < data['start_time']:
+			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"End date msut be greater"}, status=status.HTTP_400_BAD_REQUEST)
+		check_exist_permission  = check_existing_permission(data,id)
+		if check_exist_permission:
+			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
+		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		applied_hours = calculate_applied_hours(data['start_time'], data['end_time'])
+		applied_employee_start_time = applied_permission.start_time
+		applied_employee_end_time = applied_permission.end_time
+		applied_employee_start_time = applied_employee_start_time.strftime("%H:%M")
+		applied_employee_end_time = applied_employee_end_time.strftime("%H:%M")
+		previous_hours = calculate_applied_hours(applied_employee_start_time, applied_employee_end_time)
+		balance_duration = employee_permission_balance.permission_hours + previous_hours
+		if applied_hours <= balance_duration:
+			serializer = create_applied_permission(applied_permission, data = data, partial = True)
+			if serializer.is_valid():
+				serializer.save(updated_by = token_user_id)
+			value = balance_duration - applied_hours
+			employee_permission_balance.permission_hours = value
+			employee_permission_balance.updated_by = token_user_id
+			employee_permission_balance.save()
+			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
+		else:
+			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
+	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
 
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))

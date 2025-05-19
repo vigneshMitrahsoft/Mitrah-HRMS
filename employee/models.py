@@ -2,6 +2,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager
 from company.models import company
+import os
+
+def upload_path(instance, filename):
+	ext = filename.split('.')[-1]
+	filename = f"{instance.employee_id}_profile.{ext}"
+	return os.path.join('profile_picture/', filename)
 
 class EmployeeManager(BaseUserManager):
 	def create_user(self, email, password=None, **extra_fields):
@@ -34,7 +40,7 @@ class employee_type(models.Model):
 
 	class Meta:
 		db_table = 'employee_type'
-	
+
 class employee(AbstractBaseUser, PermissionsMixin):
 	employee_id = models.BigAutoField(primary_key=True)
 	company_id = models.ForeignKey(company, on_delete=models.DO_NOTHING, related_name = 'companyid', db_column = 'company_id')
@@ -47,7 +53,7 @@ class employee(AbstractBaseUser, PermissionsMixin):
 	phone = models.CharField(null =True)
 	aadhar_number = models.CharField(null = True)
 	pan_number = models.CharField(null = True)
-	profile_picture_path = models.CharField(max_length = 100, null = True)
+	profile_picture_path = models.ImageField(upload_to = upload_path, null = True, blank = True)
 	address = models.CharField(max_length=100)
 	# role_id = models.ForeignKey(employee_role, on_delete=models.DO_NOTHING, related_name = 'employee_roleid', db_column = 'role_id')
 	date_of_joining = models.DateField()

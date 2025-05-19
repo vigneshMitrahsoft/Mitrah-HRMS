@@ -1,6 +1,9 @@
+from datetime import timedelta
 from rest_framework import  serializers
 from employee.models import employee
 from .models import employee_leave_balances, employee_applied_leave_days, employee_applied_leaves,employee_applied_permissions
+from django.db.models import Prefetch
+
 
 class create_leavebalance_serializer(serializers.ModelSerializer):
 	class Meta:
@@ -32,10 +35,23 @@ class create_employee_applied_leaves(serializers.Serializer):
 		if data['start_date'] > data['end_date']: 
 			# raise serializers.ValidationError( "End date should be greater than start date")
 			error['date_error'] = "End date should be greater than start date"
-		
+		session_dates = [session['leave_date'] for session in data['sessions']]
+		session_dates_set = set(session_dates)
+		print("session_sate---->",session_dates_set, type(session_dates_set))
+		total_days = (data['end_date'] - data['start_date']).days + 1
+		expected_dates_set = {
+			(data['start_date'] + timedelta(days=i)) for i in range(total_days)
+		}
+		print("exp session_sate---->",expected_dates_set, type(expected_dates_set))
+
+		# Compare expected vs. actual session dates
+		if session_dates_set != expected_dates_set:
+			error['session_date_error'] = (
+				"You must apply leave for all dates from start_date to end_date."
+            )
 		check_dates =[]
-		sick_leave = 0
-		casual_leave = 0
+		# sick_leave = 0
+		# casual_leave = 0
 		for session_data in data['sessions']:
 			if not (data['start_date'] <= session_data['leave_date'] <= data['end_date']):
 				error['session_data_error'] = "Leave date should be between start date and end date"
@@ -44,9 +60,18 @@ class create_employee_applied_leaves(serializers.Serializer):
 				error['session_data_error'] = "Leave date should be unique"
 			else:
 				check_dates.append(session_data['leave_date'])
-				
-
-		if error:
+			leave_data = employee_applied_leaves.objects.filter(employee_id=data['employee_id'].employee_id, leave_days__leave_date=session_data['leave_date']).exclude(leave_days__status='Cancelled')
+			if leave_data.exists():
+				for leave in leave_data:
+					entry = leave.leave_days.all()
+					for entry in entry:
+						print('entry:', entry.session)
+						if entry.session == session_data['session']:
+							error['session_data_error'] = "You have already applied for this date"
+						else:
+							if entry.status == 'Pending':
+								error['session_data_error'] = "You have already applied for this date, please update the existing request."
+		if error:	
 			raise serializers.ValidationError(error)
 		
 		return data
@@ -112,3 +137,8 @@ class create_applied_permission(serializers.ModelSerializer):
 		if data['end_time'] < data['start_time']:
 			raise serializers.ValidationError("enddate must be greater than start date")
 		return data
+	
+class update_applied_permission(serializers.ModelSerializer):
+	class Meta:
+		model = employee_applied_permissions
+		fields = "__all__"
