@@ -50,7 +50,6 @@ def upload_image(id, encode_string, image_for):
 		print("Error:", e)
 		return e
 
-
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
@@ -62,6 +61,7 @@ def get_employee(request,id):
 
 	serialized_data = get_serializer(data, context = {'request': request})
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
+
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr']) 
@@ -121,7 +121,7 @@ def update_employee(request, id):
 	data = request.data
 	token_user_id = request.user.employee_id
 	try:
-		employee_data = employee.objects.get(employee_id=id)
+		employee_data = employee.objects.get(employee_id = id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
 	if 'profile_picture' in request.data:
@@ -130,16 +130,17 @@ def update_employee(request, id):
 		profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
 		data['profile_picture_path'] = profile_picture_path
 
-	serializer = update_serializer(employee_data, data=data, partial=True)
+	serializer = update_serializer(employee_data, data = data, partial = True)
 	if serializer.is_valid():
-		
 		validated_data = serializer.validated_data
-		serializer.save(updated_by = token_user_id)  
- 
+
 		validated_role_ids = [role.role_id for role in validated_data.get('role_ids', [])]
 
+		validated_data.pop('role_ids')
+		employee.objects.filter(employee_id = id).update(**validated_data, updated_by = token_user_id)
+
 		current_roles = set(
-			employee_roles.objects.filter(employee_id=id, is_active=True).values_list('role_id', flat=True)
+			employee_roles.objects.filter(employee_id = id, is_active = True).values_list('role_id', flat = True)
 		)
 		updated_roles = set(validated_role_ids)
 
@@ -147,23 +148,24 @@ def update_employee(request, id):
 		roles_to_activate_or_create = updated_roles - current_roles
 
 		if roles_to_deactivate:
-			employee_roles.objects.filter(employee_id=id, role_id__in=roles_to_deactivate).update(is_active=False)
+			employee_roles.objects.filter(employee_id = id, role_id__in = roles_to_deactivate).update(is_active = False)
 
 		for role_id in roles_to_activate_or_create:
 			try:
-				emp_role = employee_roles.objects.get(employee_id=id, role_id=role_id)
+				emp_role = employee_roles.objects.get(employee_id = id, role_id = role_id)
 				emp_role.is_active = True
 				emp_role.updated_by = token_user_id
 				emp_role.save()
 			except employee_roles.DoesNotExist:
 				if roles.objects.filter(role_id=role_id).exists():
 					employee_roles.objects.create(
-						employee_id=employee_data.employee_id,
-						role_id=role_id,
-						is_active=True,
-						created_by=token_user_id,
+						employee_id = employee_data.employee_id,
+						role_id = role_id,
+						is_active = True,
+						created_by = token_user_id,
 						updated_by = token_user_id
 					)
+
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
 			status=status.HTTP_200_OK,

@@ -267,9 +267,7 @@ def request_acceptance(request, pk):
 		
 		if data['status'] == 'Accepted':
 			LoanDeduction.objects.filter(loan_id = pk).update(status = "Accepted", start_date = datetime.now(), updated_at = datetime.now(), approved_date = datetime.now()) 
-			print("Calling create_repayment_records function...")  
 			create_repayment_records(pk) 
-			print("create_repayment_records function executed.")
 			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Loan accepted successfully and created repayment"}, status = status.HTTP_201_CREATED)
 		
 		if data['status'] == 'Rejected':

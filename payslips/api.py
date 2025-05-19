@@ -262,13 +262,9 @@ def get_payslip(request, id):
 @api_view(['GET'])
 def get_all_payslips(request):
 	# Optional filters from query parameters
-	print("inside get_all_payslips")
 	employee_id = request.headers.get('employee-id')
-	print("employee_id", employee_id)
 	month = request.headers.get('month')
-	print("month", month)
 	year = request.headers.get('year')
-	print("year", year)
 	status_filter = request.headers.get('status')
  
 	# Base queryset
