@@ -91,12 +91,18 @@ def create_employee(request):
 	if role_ids:
 		try:
 			create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
-			if 'profile_picture' in request.data:
-				encode_string = request.data['profile_picture']
-				employee_id = create_employee.employee_id
-				profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
-				create_employee.profile_picture_path = profile_picture_path
+			if 'profile_picture' in request.FILES:
+				# encode_string = request.data['profile_picture']
+				# employee_id = create_employee.employee_id
+				# profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
+				# create_employee.profile_picture_path = profile_picture_path
+				# create_employee.save()
+				image = request.FILES['profile_picture']
+				create_employee.profile_picture_path = image
 				create_employee.save()
+				create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
+				create_employee.save(update_fields=['profile_picture_path'])
+
 			for role in role_ids:
 				employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
 		
@@ -118,8 +124,7 @@ def create_employee(request):
 			
 			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
 		except Exception as e:
-			transaction.set_rollback(True)  # Rollback transaction on error
-			# Log or print(e) for debugging if needed
+			transaction.set_rollback(True)
 			return Response({
 				"status": "error",
 				"message": str(e)

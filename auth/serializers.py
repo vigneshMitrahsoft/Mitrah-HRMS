@@ -11,6 +11,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 		token = super().get_token(user)
 		token['first_name'] = user.first_name
 		token['last_name'] = user.last_name
+		token['company_id'] = user.company_id.company_id
 		return token
 	
 	def validate(self, attrs):
