@@ -357,30 +357,84 @@ def get_all_employee_attendance_report(request):
 		return Response({"statuscode": status.HTTP_200_OK, "status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
 	else:
 		return Response({"statuscode": status.HTTP_400_BAD_REQUEST, "status": "Failed", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-	
 
+from collections import defaultdict
+from datetime import datetime
 
+# @api_view(('POST',))
+# @permission_classes((IsAuthenticated,))
+# def get_employee_attendance(request, id):
+#     data = request.data
+#     query = "SELECT * FROM fn_get_employee_attendances(%s, %s, %s)"
+#     with connection.cursor() as cursor:
+#         cursor.execute(query, [id, data['month'], data['year']])
+#         result = cursor.fetchall()
 
-# from collections import defaultdict
+#     column_names = [
+#         'date', 'day', 'weekend', 'attendance_status', 'leave_status',
+#         'check_in', 'check_out', 'effective_hours', 'total_hours',
+#         'session', 'leave_type', 'attendance_id', 'holiday_occasion',
+#         'permission_start_time', 'permission_end_time'
+#     ]
 
-# # Step 1: Group rows by date
-# grouped = defaultdict(list)
-# for row in result:
-#     row_dict = dict(zip(column_names, row))
-#     grouped[row_dict['date']].append(row_dict)
+#     raw_results = [dict(zip(column_names, row)) for row in result]
 
-# # Step 2: Merge rows per date
-# merged_results = []
-# for date, items in grouped.items():
-#     base = items[0].copy()
-#     permissions = []
-#     for item in items:
-#         permissions.append({
-#             "start_time": item['permission_start_time'],
-#             "end_time": item['permission_end_time']
+#     # Group by date + session (if needed)
+#     grouped_data = defaultdict(lambda: {
+#         'permissions': [],
+#         'date': None,
+#         'day': None,
+#         'is_week_off': None,
+#         'attendance_status': '',
+#         'leave_status': '',
+#         'check_in': "00:00:00",
+#         'check_out': "00:00:00",
+#         'effective_hours': "00:00:00",
+#         'total_hours': "00:00:00",
+#         'session': '',
+#         'leave_type': '',
+#         'attendance_id': None,
+#         'holiday_occasion': None,
+#     })
+
+#     for entry in raw_results:
+#         key = (entry['date'], entry['session'])  # you can group by just 'date' if you want
+#         group = grouped_data[key]
+
+#         group['date'] = entry['date']
+#         group['day'] = entry['day']
+#         group['is_week_off'] = entry['weekend']
+#         group['attendance_status'] = entry['attendance_status']
+#         group['leave_status'] = entry['leave_status']
+#         group['check_in'] = entry['check_in'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_in'] else "00:00:00"
+#         group['check_out'] = entry['check_out'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_out'] else "00:00:00"
+#         group['effective_hours'] = entry['effective_hours']
+#         group['total_hours'] = entry['total_hours']
+#         group['session'] = entry['session']
+#         group['leave_type'] = entry['leave_type']
+#         group['attendance_id'] = entry['attendance_id']
+#         group['holiday_occasion'] = entry['holiday_occasion']
+
+#         group['permissions'].append({
+#             'start_time': entry['permission_start_time'],
+#             'end_time': entry['permission_end_time']
 #         })
-#     base["permissions"] = permissions
-#     merged_results.append(base)
+
+#     # Convert grouped dict to list
+#     final_result = list(grouped_data.values())
+
+#     serializer = get_employee_attendance_serializer(final_result, many=True)
+#     return Response({
+#         "statuscode": status.HTTP_200_OK,
+#         "status": "success",
+#         "data": serializer.data
+#     }, status=status.HTTP_200_OK)
+
+
+
+   ###### alter ######
+from collections import defaultdict
+from datetime import datetime
 
 from collections import defaultdict
 from datetime import datetime
@@ -388,79 +442,79 @@ from datetime import datetime
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
 def get_employee_attendance(request, id):
-	data = request.data
-	query = "SELECT * FROM fn_get_employee_attendances(%s, %s, %s)"
-	with connection.cursor() as cursor:
-		cursor.execute(query, [id, data['month'], data['year']])
-		result = cursor.fetchall()
+    data = request.data
+    query = "SELECT * FROM fn_get_employee_attendances(%s, %s, %s)"
+    with connection.cursor() as cursor:
+        cursor.execute(query, [id, data['month'], data['year']])
+        result = cursor.fetchall()
 
-	column_names = [
-		'date', 'day', 'weekend', 'attendance_status', 'leave_status',
-		'check_in', 'check_out', 'effective_hours', 'total_hours',
-		'session', 'leave_type', 'attendance_id', 'holiday_occasion',
-		'permission_start_time', 'permission_end_time'
-	]
+    column_names = [
+        'date', 'day', 'weekend', 'attendance_status', 'leave_status',
+        'check_in', 'check_out', 'effective_hours', 'total_hours',
+        'session', 'leave_type', 'attendance_id', 'holiday_occasion',
+        'permission_start_time', 'permission_end_time'
+    ]
 
-	raw_results = [dict(zip(column_names, row)) for row in result]
+    raw_results = [dict(zip(column_names, row)) for row in result]
 
-	# Group by date + session (if needed)
-	grouped_data = defaultdict(lambda: {
-	'permissions': [],
-	'leaves': [],
-	'date': None,
-	'day': None,
-	'is_week_off': None,
-	'attendance_status': '',
-	'leave_status': '',
-	'check_in': "00:00:00",
-	'check_out': "00:00:00",
-	'effective_hours': "00:00:00",
-	'total_hours': "00:00:00",
-	'session': '',
-	'leave_type': '',
-	'attendance_id': None,
-	'holiday_occasion': None,
-	})
-	for entry in raw_results:
-		key = entry['date']
-		group = grouped_data[key]
+    # Grouping by just 'date' (not session)
+    grouped_data = defaultdict(lambda: {
+        'permissions': [],
+        'leaves': [],
+        'date': None,
+        'day': None,
+        'is_week_off': None,
+        'attendance_status': '',
+        'leave_status': '',
+        'check_in': "00:00:00",
+        'check_out': "00:00:00",
+        'effective_hours': "00:00:00",
+        'total_hours': "00:00:00",
+        'attendance_id': None,
+        'holiday_occasion': None,
+    })
 
-		group['date'] = entry['date']
-		group['day'] = entry['day']
-		group['is_week_off'] = entry['weekend']
-		group['attendance_status'] = entry['attendance_status']
-		group['check_in'] = entry['check_in'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_in'] else "00:00:00"
-		group['check_out'] = entry['check_out'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_out'] else "00:00:00"
-		group['effective_hours'] = entry['effective_hours']
-		group['total_hours'] = entry['total_hours']
-		group['attendance_id'] = entry['attendance_id']
-		group['holiday_occasion'] = entry['holiday_occasion']
+    for entry in raw_results:
+        key = entry['date']
+        group = grouped_data[key]
 
-		# Append permissions
-		if entry['permission_start_time'] or entry['permission_end_time']:
-			group['permissions'].append({
-				'start_time': entry['permission_start_time'],
-				'end_time': entry['permission_end_time']
-			})
+        group['date'] = entry['date']
+        group['day'] = entry['day']
+        group['is_week_off'] = entry['weekend']
+        group['attendance_status'] = entry['attendance_status']
 
-		# Append leaves
-		if entry['session'] or entry['leave_type']:
-			group['leaves'].append({
-				'session': entry['session'],
-				'leave_type': entry['leave_type']
-			})
+        group['check_in'] = entry['check_in'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_in'] else "00:00:00"
+        group['check_out'] = entry['check_out'].strftime("%Y-%m-%d:%H:%M:%S") if entry['check_out'] else "00:00:00"
+        group['effective_hours'] = entry['effective_hours']
+        group['total_hours'] = entry['total_hours']
+        group['attendance_id'] = entry['attendance_id']
+        group['holiday_occasion'] = entry['holiday_occasion']
 
-		# Optionally: leave status/type from the first non-empty entry
-		if not group['leave_status'] and entry['leave_status']:
-			group['leave_status'] = entry['leave_status']
-		if not group['leave_type'] and entry['leave_type']:
-			group['leave_type'] = entry['leave_type']
+        # Append permission if available
+        if entry['permission_start_time'] or entry['permission_end_time']:
+            group['permissions'].append({
+                'start_time': entry['permission_start_time'],
+                'end_time': entry['permission_end_time']
+            })
 
-	final_result = list(grouped_data.values())
+        # Append leave info per session
+        if entry['session'] or entry['leave_type']:
+            group['leaves'].append({
+                'session': entry['session'],
+                'leave_type': entry['leave_type']
+            })
 
-	serializer = get_employee_attendance_serializer(final_result, many=True)
-	return Response({
-		"statuscode": status.HTTP_200_OK,
-		"status": "success",
-		"data": serializer.data
-	}, status=status.HTTP_200_OK)
+        # Assign top-level leave status/type from first non-empty one
+        if not group['leave_status'] and entry['leave_status']:
+            group['leave_status'] = entry['leave_status']
+
+    # Convert to list
+    final_result = list(grouped_data.values())
+
+    serializer = get_employee_attendance_serializer(final_result, many=True)
+    return Response({
+        "statuscode": status.HTTP_200_OK,
+        "status": "success",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
+

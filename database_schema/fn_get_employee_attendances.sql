@@ -1,9 +1,8 @@
-
 CREATE OR REPLACE FUNCTION public.fn_get_employee_attendances(
 	p_employee_id integer,
 	month integer,
 	year integer)
-    RETURNS TABLE(date_value date, day_of_week character varying, weekend boolean, attendance_status character varying, leave_status character varying, check_in timestamp with time zone, check_out timestamp with time zone, effective_hours time without time zone, total_hours time without time zone, session character varying, leave_type character varying, attendance_id bigint,occasion character varying, permisions_start_time time without time zone, permissions_end_time time without time zone) 
+    RETURNS TABLE(date_value date, day_of_week character varying, weekend boolean, attendance_status character varying, leave_status character varying, check_in timestamp with time zone, check_out timestamp with time zone, effective_hours time without time zone, total_hours time without time zone, session character varying, leave_type character varying, attendance_id bigint, occasion character varying, permisions_start_time time without time zone, permissions_end_time time without time zone) 
     LANGUAGE 'plpgsql'
     COST 100
     VOLATILE PARALLEL UNSAFE
@@ -11,7 +10,7 @@ CREATE OR REPLACE FUNCTION public.fn_get_employee_attendances(
 
 AS $BODY$
 DECLARE
-    start_date DATE;    
+    start_date DATE;
     end_date DATE;
 BEGIN
     start_date := DATE_TRUNC('MONTH', TO_DATE(year || '-' || month || '-01', 'YYYY-MM-DD'));
@@ -43,18 +42,18 @@ BEGIN
 		
     FROM CET_Dates dat
     LEFT JOIN employee_attendance ea 
-        ON ea.date = dat.DateValue AND ea.employee_id_id = p_employee_id
+        ON ea.date = dat.DateValue AND ea.employee_id = p_employee_id
     LEFT JOIN employees_attendance_info attendance_info
-        ON attendance_info.date = dat.DateValue AND attendance_info.employee_id_id = p_employee_id
+        ON attendance_info.date = dat.DateValue AND attendance_info.employee_id = p_employee_id
     LEFT JOIN (
         SELECT ld.*
         FROM employee_applied_leave_days ld
-        JOIN employee_applied_leaves l ON l.id = ld.applied_leave_request_id_id
-        WHERE l.employee_id_id = p_employee_id AND ld.status <> 'Cancelled'
+        JOIN employee_applied_leaves l ON l.id = ld.applied_leave_request_id
+        WHERE l.employee_id = p_employee_id AND ld.status <> 'Cancelled'
     ) AS leave_days
         ON leave_days.leave_date = dat.DateValue
     LEFT JOIN employee_applied_leaves leave
-        ON leave.id = leave_days.applied_leave_request_id_id AND leave.employee_id_id = p_employee_id
+        ON leave.id = leave_days.applied_leave_request_id AND leave.employee_id = p_employee_id
 	LEFT JOIN holiday_holiday holiday
 		ON holiday.holiday_date = dat.DateValue
 	LEFT JOIN employee_applied_permissions ap

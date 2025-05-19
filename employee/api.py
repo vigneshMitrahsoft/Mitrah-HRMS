@@ -23,6 +23,7 @@ from auth.views import IsAuthorized
 import base64
 import imghdr
 import os
+from django.db import transaction
 
 def upload_image(id, encode_string, image_for):
 	base64_string = encode_string
@@ -73,18 +74,22 @@ def get_employees(request):
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
+@transaction.atomic
 def create_employee(request):
 	data = request.data
 	token_user_id = request.user.employee_id
 	serializer = create_serializer(data = data)
-	if serializer.is_valid():
-		data = serializer.validated_data
-		plain_password = data.get('password')
-		if plain_password:
-			hashed_password = make_password(plain_password)   
-			data['password'] = hashed_password
-		role_ids = data.pop('role_ids')
-		if role_ids:
+	if not serializer.is_valid():
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	
+	data = serializer.validated_data
+	plain_password = data.get('password')
+	if plain_password:
+		hashed_password = make_password(plain_password)   
+		data['password'] = hashed_password
+	role_ids = data.pop('role_ids')
+	if role_ids:
+		try:
 			create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 			if 'profile_picture' in request.data:
 				encode_string = request.data['profile_picture']
@@ -92,28 +97,34 @@ def create_employee(request):
 				profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
 				create_employee.profile_picture_path = profile_picture_path
 				create_employee.save()
-		for role in role_ids:
-			employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
+			for role in role_ids:
+				employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
 		
-		company_data = company.objects.get(company_id = request.data['company_id'])
-		company_settings_data = company_Settings.objects.get(company = company_data)
-		leave_balance_data = {
-			'employee_id':create_employee.employee_id,
-			'sick_leave':company_settings_data.sick_leaves,
-			'casual_leave':company_settings_data.casual_leaves,
-			'permission_hours':company_settings_data.permission_hours,
-			'compensation_leave': company_settings_data.leave_compensation
-		}
-		serializer = create_leavebalance_serializer(data=leave_balance_data)
-		if serializer.is_valid():
-			data = serializer.validated_data
-			create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
-		else:
-			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-	else:
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+			company_data = company.objects.get(company_id = request.data['company_id'])
+			company_settings_data = company_Settings.objects.get(company = company_data)
+			leave_balance_data = {
+				'employee_id':create_employee.employee_id,
+				'sick_leave':company_settings_data.sick_leaves,
+				'casual_leave':company_settings_data.casual_leaves,
+				'permission_hours':company_settings_data.permission_hours,
+				'compensation_leave': company_settings_data.leave_compensation
+			}
+			serializer = create_leavebalance_serializer(data=leave_balance_data)
+			if serializer.is_valid():
+				data = serializer.validated_data
+				create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+			else:
+				raise  ValueError(serializer.errors)
+			
+			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+		except Exception as e:
+			transaction.set_rollback(True)  # Rollback transaction on error
+			# Log or print(e) for debugging if needed
+			return Response({
+				"status": "error",
+				"message": str(e)
+			}, status=status.HTTP_400_BAD_REQUEST)
+		
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])

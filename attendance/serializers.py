@@ -76,6 +76,27 @@ class get_attendance_info_serializer(serializers.Serializer):
 	total_hours = serializers.TimeField(required = False, allow_null=True)
 	entries = attendance_entry_model(many = True,allow_null=True)
 
+# class PermissionSerializer(serializers.Serializer):
+#     start_time = serializers.TimeField(required=False)
+#     end_time = serializers.TimeField(required=False)
+
+# class get_employee_attendance_serializer(serializers.Serializer):
+#     date = serializers.DateField(required=True)
+#     day = serializers.CharField(required=True)
+#     is_week_off = serializers.BooleanField(required=False)
+#     attendance_status = serializers.CharField(required=False)
+#     leave_status = serializers.CharField(required=False)
+#     check_in = serializers.CharField(required=False)  # Can be string since you're formatting
+#     check_out = serializers.CharField(required=False)
+#     effective_hours = serializers.TimeField(required=False)
+#     total_hours = serializers.TimeField(required=False)
+#     session = serializers.CharField(required=False)
+#     leave_type = serializers.CharField(required=False)
+#     attendance_id = serializers.IntegerField(required=False)
+#     holiday_occasion = serializers.CharField(required=False)
+#     permissions = PermissionSerializer(many=True, required=False)
+
+
 
 class LeaveSerializer(serializers.Serializer):
     session = serializers.CharField(required=False)

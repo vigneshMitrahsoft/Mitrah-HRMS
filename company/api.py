@@ -5,6 +5,7 @@ from .models import company, company_Settings
 from .serializers import companySerializer, companyCreateSerializer, companyUpdateSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import transaction
 
 def company_exists(pk):
 	try:
@@ -26,29 +27,38 @@ def specific_company(request, pk):
 	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('POST',))
+@transaction.atomic
 def company_create(request):
 	serializer = companyCreateSerializer(data = request.data)
-	if serializer.is_valid():
+	if not serializer.is_valid():
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	else:
 		data = serializer.validated_data
-		comp = company.objects.create(company_name = data['company_name'], address = data['address'], created_at = datetime.now())
-		company_Settings.objects.create(
-			company_id = comp.company_id,
-			HRA = data['hra'],
-			employer_ESI = data['employer_ESI'],
-			employee_ESI = data['employee_ESI'], 
-			employer_PF = data['employer_PF'],
-			employee_PF = data['employee_PF'],
-			leave_compensation = data['leave_compensation'],
-			basic_work_hours = data['basic_work_hours'],
-			sick_leaves = data['sick_leaves'],
-			casual_leaves = data['casual_leaves'],
-			basic_pay = data['basic_pay'],
-			other_allowances = data['other_allowances'],
-			permission_hours = data['permission_hours'],
-			pay_cycle_day = data['pay_cycle_day']
-		)
-		return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "company created successfully"}, status = status.HTTP_201_CREATED)
-	return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+		try:
+			comp = company.objects.create(company_name = data['company_name'], address = data['address'], created_at = datetime.now())
+			company_Settings.objects.create(
+				company = comp.company_id,
+				HRA = data['hra'],
+				employer_ESI = data['employer_ESI'],
+				employee_ESI = data['employee_ESI'], 
+				employer_PF = data['employer_PF'],
+				employee_PF = data['employee_PF'],
+				leave_compensation = data['leave_compensation'],
+				basic_work_hours = data['basic_work_hours'],
+				sick_leaves = data['sick_leaves'],
+				casual_leaves = data['casual_leaves'],
+				basic_pay = data['basic_pay'],
+				other_allowances = data['other_allowances'],
+				permission_hours = data['permission_hours'],
+				pay_cycle_day = data['pay_cycle_day']
+			)
+			return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "company created successfully"}, status = status.HTTP_201_CREATED)
+		except Exception as e:
+			transaction.set_rollback(True)
+			return Response({
+				"status": "error",
+				"message": str(e)
+			}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('PATCH',))
 def company_update(request,pk):
@@ -71,8 +81,6 @@ def company_update(request,pk):
 		return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "company updated successfully"}, status = status.HTTP_200_OK)   
 	return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 		 
-		
-
 @api_view(('DELETE',))
 def company_delete(request,pk):
 	comp = company_exists(pk)
