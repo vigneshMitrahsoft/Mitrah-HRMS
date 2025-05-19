@@ -1,11 +1,17 @@
 from django.db import models
-
+import os
 # Create your models here.
+
+def upload_path(instance, filename):
+	ext = filename.split('.')[-1]
+	filename = f"{instance.company_id}_profile.{ext}"
+	return os.path.join('company_logo/', filename)
 
 class company(models.Model):
     company_id = models.BigAutoField(primary_key=True)
     company_name = models.CharField(max_length=100)
     address = models.CharField(max_length=100)
+    company_logo_path = models.ImageField(upload_to = upload_path, null = True, blank = True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.CharField(max_length=100)
@@ -13,7 +19,6 @@ class company(models.Model):
 
     class Meta:
         db_table = 'company'
-
 
 class company_Settings(models.Model):
     company_settings_id = models.BigAutoField(primary_key=True)

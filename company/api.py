@@ -6,6 +6,7 @@ from .serializers import companySerializer, companyCreateSerializer, companyUpda
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
+import os
 
 def check_company_exists(pk):
 	try:
@@ -17,13 +18,13 @@ def check_company_exists(pk):
 @api_view(('GET',))
 def company_list(request):
 	companies = company.objects.filter(is_active = True)
-	serializer = companySerializer(companies, many = True)
+	serializer = companySerializer(companies, many = True, context = {'request': request})
 	return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('GET',))
 def specific_company(request, pk):
 	comp = company.objects.get(company_id = pk)
-	serializer = companySerializer(comp)
+	serializer = companySerializer(comp, context = {'request': request})
 	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('POST',))
@@ -36,8 +37,15 @@ def company_create(request):
 		data = serializer.validated_data
 		try:
 			comp = company.objects.create(company_name = data['company_name'], address = data['address'], created_at = datetime.now())
+			if 'company_logo' in request.FILES:
+				image = request.FILES['company_logo']
+				comp.company_logo_path = image
+				comp.save()
+				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
+				comp.save(update_fields=['company_logo_path'])
+
 			company_Settings.objects.create(
-				company = comp.company_id,
+				company = comp,
 				HRA = data['hra'],
 				employer_ESI = data['employer_ESI'],
 				employee_ESI = data['employee_ESI'], 

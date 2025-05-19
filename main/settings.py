@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     "leave",  
     "holiday",
 	"payslips",
-	"dashboard"
+	"dashboard",
+	"subscription"
 ]
 
 

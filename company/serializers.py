@@ -1,15 +1,30 @@
 from rest_framework import serializers
 from .models import company
+import os
 
 class companySerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = company
 		fields = '__all__'
+		
+	def to_representation(self, instance):
+		request = self.context['request']  
+		data = super().to_representation(instance)
+		request_url = request.build_absolute_uri('/')[:-1] 
+		file_directory = '/assets/company_logo/'
+		if data.get('company_logo_path'):
+			filename = os.path.basename(data['company_logo_path'])
+			data['company_logo_path'] = f"{request_url}{file_directory}{filename}"
+		else:
+			data['company_logo_path'] = ""
+		data = {key: "" if value is None else value for key, value in data.items()}
+		return data
 
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
+	company_logo_path = serializers.CharField(required = False)
 	hra = serializers.FloatField()
 	employer_ESI = serializers.FloatField()
 	employee_ESI = serializers.FloatField()
