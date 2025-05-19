@@ -5,7 +5,6 @@ from django.contrib.auth.hashers import make_password
 from employee.models import employee, employee_roles
 from company.models import company, company_Settings
 from .serializers import RegisterSerializer
-from datetime import datetime
 
 @api_view(('POST',))
 def register(request):
@@ -14,16 +13,13 @@ def register(request):
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	data = serializer.validated_data
-	Company = company.objects.create(
+	company_model = company.objects.create(
 			company_name = data['company_name'],
 			address = data['address'],
-			created_at = datetime.now(),
-			updated_at = datetime.now(),
-			updated_by = 1,
 			is_active = True
-			)
-	Company_settings=company_Settings.objects.create(
-		company=Company,
+	)
+	company_Settings.objects.create(
+		company = company_model,
 		HRA = 40,
 		employer_ESI = 3.25,
 		employee_ESI = 0.75,
@@ -37,10 +33,10 @@ def register(request):
 		other_allowances = 40,
 		permission_hours = 1.5,
 		pay_cycle_day = 12
-		)
+	)
 		
-	Employee = employee.objects.create(
-		company_id = Company,
+	employee_model = employee.objects.create(
+		company_id = company_model,
 		first_name = data['first_name'],
 		last_name = data['last_name'],
 		email = data['email'],
@@ -51,19 +47,11 @@ def register(request):
 		is_active = True,
 		is_superuser = False,
 		type_id=data['type_id'],
-		created_at = datetime.now(),
-		updated_at = datetime.now(),
-		created_by = 1,
-		updated_by = 1 
-		)
-	role_ids = [5, 6]  
-	for role_id in role_ids:
-		employee_roles.objects.create(
-			employee_id=Employee.employee_id,  
-			role_id=role_id,
-			created_at=datetime.now(),
-			updated_at=datetime.now(),
-			created_by=1,
-			updated_by=1
-			)
-	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Registered successfully"},status=status.HTTP_201_CREATED)
+	)
+
+	employee_roles.objects.bulk_create([
+	employee_roles(employee_id = employee_model.employee_id, role_id = 5),
+	employee_roles(employee_id = employee_model.employee_id, role_id = 6)
+	])
+
+	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success" ,"message":"Registered successfully"},status=status.HTTP_201_CREATED)
