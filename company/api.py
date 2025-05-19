@@ -6,9 +6,9 @@ from .serializers import companySerializer, companyCreateSerializer, companyUpda
 from rest_framework.response import Response
 from rest_framework import status
 
-def company_exists(pk):
+def check_company_exists(pk):
 	try:
-		comp = company.objects.filter(company_id = pk)
+		comp = company.objects.filter(company_id = pk, is_active = True)
 	except company.DoesNotExist:
 		return Response ({"details" : "company not found"}, status = status.HTTP_404_NOT_FOUND)
 	return comp
@@ -52,7 +52,7 @@ def company_create(request):
 
 @api_view(('PATCH',))
 def company_update(request,pk):
-	comp = company_exists(pk)
+	comp = check_company_exists(pk)
 	serializer = companyUpdateSerializer(comp, data = request.data, partial = True)
 	if serializer.is_valid():
 		datas = serializer.validated_data
@@ -75,7 +75,7 @@ def company_update(request,pk):
 
 @api_view(('DELETE',))
 def company_delete(request,pk):
-	comp = company_exists(pk)
+	comp = check_company_exists(pk)
 	if comp:
 		company.objects.filter(company_id = pk).update(is_active = False)
 		return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "company deleted successfully"}, status = status.HTTP_204_NO_CONTENT)

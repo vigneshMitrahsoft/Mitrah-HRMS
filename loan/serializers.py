@@ -39,7 +39,7 @@ class createLoanSerializer(serializers.Serializer):
 		loan_amount = data.get('loan_amount')
 		percentage_amount = data.get('percentage_amount')
 		fixed_amount = data.get('fixed_amount')
-		tensure = data.get('tensure')
+		tenure = data.get('tenure')
 
 		if loan_type not in ('loan','advance'):
 			raise serializers.ValidationError("Loan type can only be loan or advance")
@@ -47,19 +47,19 @@ class createLoanSerializer(serializers.Serializer):
 		if loan_type == 'loan':
 			if loan_amount<=0:
 				raise serializers.ValidationError("Loan amount cannot be negative and zero")
-			if percentage_amount is None and fixed_amount is None and tensure is None:
-				raise serializers.ValidationError("Percentage amount or fixed amount or tensure must be provided")
-			if percentage_amount is not None and fixed_amount is not None and tensure is not None:
-				raise serializers.ValidationError("Both, Percentage amount and fixed amount, tensure should not be provided")
+			if percentage_amount is None and fixed_amount is None and tenure is None:
+				raise serializers.ValidationError("Percentage amount or fixed amount or tenure must be provided")
+			if percentage_amount is not None and fixed_amount is not None and tenure is not None:
+				raise serializers.ValidationError("Both, Percentage amount and fixed amount, tenure should not be provided")
 			if percentage_amount is not None:
 				if percentage_amount <= 0 or percentage_amount > 100:
 					raise serializers.ValidationError("Percentage amount should be between 1 and 100")
 			if fixed_amount is not None:
 				if fixed_amount <= 0:
 					raise serializers.ValidationError("Fixed amount must be greater than zero")
-			if tensure is not None:
-				if tensure <=0:
-					raise serializers.ValidationError("Tensure must be greater than zero")
+			if tenure is not None:
+				if tenure <=0:
+					raise serializers.ValidationError("Tenure must be greater than zero")
 		if loan_type == 'advance':
 			if loan_amount is None:
 				raise serializers.ValidationError("Loan amount should not be provided for advance")
@@ -80,7 +80,7 @@ class updateLoanSerializer(serializers.Serializer):
 	repayment_type = serializers.CharField(required=False)
 	percentage_amount = serializers.FloatField(required=False)
 	fixed_amount = serializers.FloatField(required=False)
-	tensure = serializers.FloatField(required = False)
+	tenure = serializers.FloatField(required = False)
 	# status = serializers.CharField(max_length=50)
 	# created_at = serializers.DateTimeField()
 	# updated_at = serializers.DateTimeField(datetime.now())  
@@ -95,7 +95,7 @@ class updateLoanSerializer(serializers.Serializer):
 		loan_amount = data.get('loan_amount')
 		percentage_amount = data.get('percentage_amount')
 		fixed_amount = data.get('fixed_amount')
-		tensure = data.get('tensure')
+		tenure = data.get('tenure')
 
 		if loan_type not in ('loan','advance'):
 			raise serializers.ValidationError("Loan type can only be loan or advance")
@@ -113,9 +113,9 @@ class updateLoanSerializer(serializers.Serializer):
 			if fixed_amount is not None:
 				if fixed_amount <= 0:
 					raise serializers.ValidationError("Fixed amount must be greater than zero")
-			if tensure is not None:
-				if tensure <=0:
-					raise serializers.ValidationError("Tensure must be greater than zero")
+			if tenure is not None:
+				if tenure <=0:
+					raise serializers.ValidationError("Tenure must be greater than zero")
 		if loan_type =='advance':
 			if loan_amount is None:
 				raise serializers.ValidationError("Loan amount should not be provided for advance")
@@ -132,7 +132,7 @@ class loanStatusUpdateSerializer(serializers.Serializer):
 	def validate(self, data):
 		status = data.get('status').strip().lower()
 		if status not in ('pending','accepted','rejected'):
-			raise serializers.ValidationError("Status can only be pending, approved or rejected")
+			raise serializers.ValidationError("Status can only be pending, accepted or rejected")
 		return data
 	
 
