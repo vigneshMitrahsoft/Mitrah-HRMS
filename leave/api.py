@@ -10,7 +10,7 @@ from attendance.api import convert_timedelta_to_time, add_effective_time
 from attendance.models import employee_attendance, employees_attendance_info
 from attendance.serializers import atttendance_info_post_serializer, create_attendance_byinfo_serializer
 from rest_framework.permissions import IsAuthenticated
-
+from django.db import transaction
 
 def calculate_applied_hours(start_time, end_time):
 	fmt = "%H:%M"
@@ -120,6 +120,7 @@ def get_employee_leave_balances(request,id):
 
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
+@transaction.atomic
 def apply_employee_leaves(request):
 	token_user_id = request.user.employee_id
 	employee_leave_info = request.data
@@ -140,34 +141,40 @@ def apply_employee_leaves(request):
 		serializer = create_employee_applied_leaves(data = data)
 		if serializer.is_valid():
 			data = serializer.validated_data
-			applied_leave = employee_applied_leaves.objects.create(
-				employee_id = data['employee_id'],
-				start_date = data['start_date'],
-				end_date = data['end_date'],
-				leave_type = data['leave_type'],
-				reason = data['reason'],
-				status = data['status'],
-				action_by = token_user_id
-			)
-			employee_applied_leave_days.objects.bulk_create([
-				employee_applied_leave_days(
-					applied_leave_request_id=applied_leave,
-					leave_date=session_data['leave_date'],
-					session=session_data['session'],
-					comment=session_data['comment'],
-					status=session_data['status'],
-					created_by = token_user_id,
-					updated_by = token_user_id
-				) for  session_data in data['sessions']
-			])
-			if employee_leave_info['leave_type'] == 'Sick Leave':
-				employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - Total_days
-			else:
-				employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - Total_days
-			employee_leave_balance.updated_by = token_user_id
-			employee_leave_balance.save()
-			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Leave applied successfully"},status=status.HTTP_201_CREATED)
-
+			try:
+				applied_leave = employee_applied_leaves.objects.create(
+					employee_id = data['employee_id'],
+					start_date = data['start_date'],
+					end_date = data['end_date'],
+					leave_type = data['leave_type'],
+					reason = data['reason'],
+					status = data['status'],
+					action_by = token_user_id
+				)
+				employee_applied_leave_days.objects.bulk_create([
+					employee_applied_leave_days(
+						applied_leave_request_id=applied_leave,
+						leave_date=session_data['leave_date'],
+						session=session_data['session'],
+						comment=session_data['comment'],
+						status=session_data['status'],
+						created_by = token_user_id,
+						updated_by = token_user_id
+					) for  session_data in data['sessions']
+				])
+				if employee_leave_info['leave_type'] == 'Sick Leave':
+					employee_leave_balance.sick_leave = employee_leave_balance.sick_leave - Total_days
+				else:
+					employee_leave_balance.casual_leave = employee_leave_balance.casual_leave - Total_days
+				employee_leave_balance.updated_by = token_user_id
+				employee_leave_balance.save()
+				return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Leave applied successfully"},status=status.HTTP_201_CREATED)
+			except Exception as e:
+				transaction.set_rollback(True)
+				return Response({
+					"status": "error",
+					"message": str(e)
+				}, status=status.HTTP_400_BAD_REQUEST)
 		else:
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -206,6 +213,7 @@ def get_employee_applied_leaves(request,id):
 		
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
+@transaction.atomic
 def update_employee_applied_leaves(request, id):
 	token_user_id = request.user.employee_id
 	data = request.data
@@ -240,7 +248,12 @@ def update_employee_applied_leaves(request, id):
 					else:
 						return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	except:
-		pass
+		transaction.set_rollback(True)
+		return Response({
+			"status": "error",
+			"message": str(e)
+		}, status=status.HTTP_400_BAD_REQUEST)
+	
 	serializer = create_employee_applied_leaves(employee_info, data=data, partial=True)
 	employee_leave_balance = employee_leave_balances.objects.get(employee_id=employee_info.employee_id)
 	       							##### for calculating the existing total applied leaves #####

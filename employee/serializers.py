@@ -30,11 +30,10 @@ class get_serializer(serializers.Serializer):
 	roles = serializers.SerializerMethodField()
 
 	def get_roles(self, obj):
-		role_ids = employee_roles.objects.filter(
-		employee=obj,
-		is_active=True
-	).select_related("role").values_list("role__role_id", flat=True)
-	
+		print("obj-->",obj.employee_id)
+		roles = employee_roles.objects.filter(employee=obj.employee_id,is_active=True)
+		return roles.values_list('role__role_id', flat=True)
+			
 	# 	roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
 	# 	return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
 
@@ -53,9 +52,7 @@ class get_serializer(serializers.Serializer):
 		# data["gender"] = gender_map.get(gender_value, 0)
 		request_url = request.build_absolute_uri('/')[:-1]
 		file_directory = '/assets/profile_picture/'
-		print("djfkldkjfd--->",data['profile_picture_path'])
 		if data['profile_picture_path']:
-			print("hlo--->")
 			data['profile_picture_path'] = request_url + file_directory + data['profile_picture_path']
 		else:
 			data['profile_picture_path'] = "null"
