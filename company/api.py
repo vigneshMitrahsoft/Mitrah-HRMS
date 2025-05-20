@@ -25,6 +25,7 @@ def company_list(request):
 def specific_company(request, pk):
 	comp = company.objects.get(company_id = pk)
 	serializer = companySerializer(comp, context = {'request': request})
+	print(serializer)
 	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @parser_classes([MultiPartParser, FormParser])
