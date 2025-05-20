@@ -1,3 +1,5 @@
+import glob
+from django.conf import settings
 from django.http import JsonResponse
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
@@ -6,7 +8,8 @@ from company.models import company_Settings,company
 from holiday.models import holiday
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes,  parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
 from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer,create_salary_info_serializer
 from django.contrib.auth.hashers import make_password
@@ -25,32 +28,32 @@ import imghdr
 import os
 from django.db import transaction
 
-def upload_image(id, encode_string, image_for):
-	base64_string = encode_string
-	try:
-		image_data = base64.b64decode(base64_string)
-		image_type = imghdr.what(None, image_data)
-		allowed_types = ['jpeg', 'png','jpg']
-		if image_type not in allowed_types:
-			raise ValueError(f"Unsupported image type: {image_type}")
-		directory = os.path.join("assets", "profile_picture")
-		os.makedirs(directory, exist_ok=True)
-		file_name = f"{id}_profile.{image_type}"
-		file_path = os.path.join(directory, file_name)
-		with open(file_path, "wb") as f:
-			f.write(image_data)	
-		for ext in allowed_types:
-			if ext != image_type:
-				old_file = os.path.join(directory, f"{id}_profile.{ext}")
-				if os.path.exists(old_file):
-					os.remove(old_file)
+# def upload_image(id, encode_string, image_for):
+# 	base64_string = encode_string
+# 	try:
+# 		image_data = base64.b64decode(base64_string)
+# 		image_type = imghdr.what(None, image_data)
+# 		allowed_types = ['jpeg', 'png','jpg']
+# 		if image_type not in allowed_types:
+# 			raise ValueError(f"Unsupported image type: {image_type}")
+# 		directory = os.path.join("assets", "profile_picture")
+# 		os.makedirs(directory, exist_ok=True)
+# 		file_name = f"{id}_profile.{image_type}"
+# 		file_path = os.path.join(directory, file_name)
+# 		with open(file_path, "wb") as f:
+# 			f.write(image_data)	
+# 		for ext in allowed_types:
+# 			if ext != image_type:
+# 				old_file = os.path.join(directory, f"{id}_profile.{ext}")
+# 				if os.path.exists(old_file):
+# 					os.remove(old_file)
 
-		return file_name
+# 		return file_name
 
-	except Exception as e:
-		print("Error:", e)
-		return e
-
+# 	except Exception as e:
+# 		print("Error:", e)
+# 		return e
+	
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
@@ -74,9 +77,11 @@ def get_employees(request):
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
+@parser_classes([MultiPartParser, FormParser])
 @transaction.atomic
 def create_employee(request):
 	data = request.data
+	print("data--->",data)
 	token_user_id = request.user.employee_id
 	serializer = create_serializer(data = data)
 	if not serializer.is_valid():
@@ -87,52 +92,52 @@ def create_employee(request):
 	if plain_password:
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
-	role_ids = data.pop('role_ids')
-	if role_ids:
-		try:
-			create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
-			if 'profile_picture' in request.FILES:
-				# encode_string = request.data['profile_picture']
-				# employee_id = create_employee.employee_id
-				# profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
-				# create_employee.profile_picture_path = profile_picture_path
-				# create_employee.save()
-				image = request.FILES['profile_picture']
-				create_employee.profile_picture_path = image
-				create_employee.save()
-				create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
-				create_employee.save(update_fields=['profile_picture_path'])
+	roles_data = data.pop('roles')
+	try:
+		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
+		if 'profile_picture' in request.FILES:
+			image = request.FILES['profile_picture']
+			create_employee.profile_picture_path = image
+			create_employee.save()
+			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
+			create_employee.save(update_fields=['profile_picture_path'])
+		employee_role_objs = [
+			employee_roles(
+				employee_id=create_employee.employee_id,
+				role_id=role.role_id
+			)
+			for role in roles_data
+		]
 
-			for role in role_ids:
-				employee_roles.objects.create(employee_id = create_employee.employee_id, role_id = role.role_id)
+		employee_roles.objects.bulk_create(employee_role_objs)
+		company_data = company.objects.get(company_id = request.data['company_id'])
+		company_settings_data = company_Settings.objects.get(company = company_data)
+		leave_balance_data = {
+			'employee_id':create_employee.employee_id,
+			'sick_leave':company_settings_data.sick_leaves,
+			'casual_leave':company_settings_data.casual_leaves,
+			'permission_hours':company_settings_data.permission_hours,
+			'compensation_leave': company_settings_data.leave_compensation
+		}
+		serializer = create_leavebalance_serializer(data=leave_balance_data)
+		if serializer.is_valid():
+			data = serializer.validated_data
+			employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+		else:
+			raise  ValueError(serializer.errors)
 		
-			company_data = company.objects.get(company_id = request.data['company_id'])
-			company_settings_data = company_Settings.objects.get(company = company_data)
-			leave_balance_data = {
-				'employee_id':create_employee.employee_id,
-				'sick_leave':company_settings_data.sick_leaves,
-				'casual_leave':company_settings_data.casual_leaves,
-				'permission_hours':company_settings_data.permission_hours,
-				'compensation_leave': company_settings_data.leave_compensation
-			}
-			serializer = create_leavebalance_serializer(data=leave_balance_data)
-			if serializer.is_valid():
-				data = serializer.validated_data
-				create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
-			else:
-				raise  ValueError(serializer.errors)
-			
-			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-		except Exception as e:
-			transaction.set_rollback(True)
-			return Response({
-				"status": "error",
-				"message": str(e)
-			}, status=status.HTTP_400_BAD_REQUEST)
-		
+		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+	except Exception as e:
+		transaction.set_rollback(True)
+		return Response({
+			"status": "error",
+			"message": str(e)
+		}, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(('PATCH',))
 @permission_classes((IsAuthenticated,))
 @IsAuthorized(['hr'])
+@parser_classes([MultiPartParser, FormParser])
 def update_employee(request, id):
 	data = request.data
 	token_user_id = request.user.employee_id
@@ -140,19 +145,25 @@ def update_employee(request, id):
 		employee_data = employee.objects.get(employee_id = id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
-	if 'profile_picture' in request.data:
-		encode_string = request.data['profile_picture']
-		employee_id = employee_data.employee_id
-		profile_picture_path = upload_image(employee_id, encode_string, image_for = 'employee')
-		data['profile_picture_path'] = profile_picture_path
-
+	if 'profile_picture' in request.FILES:
+		image = request.FILES['profile_picture']
+		directory = os.path.join("assets", "profile_picture")
+		previous_file_name = employee_data.profile_picture_path
+		old_file = os.path.join(directory, f"{previous_file_name}")
+		if os.path.exists(old_file):
+			os.remove(old_file)
+		employee_data.profile_picture_path = image
+		employee_data.save()
+		employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
+		employee_data.save(update_fields=['profile_picture_path'])
+	
 	serializer = update_serializer(employee_data, data = data, partial = True)
 	if serializer.is_valid():
 		validated_data = serializer.validated_data
 
-		validated_role_ids = [role.role_id for role in validated_data.get('role_ids', [])]
-
-		validated_data.pop('role_ids')
+		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
+		if 'roles' in validated_data:
+			validated_data.pop('roles')
 		employee.objects.filter(employee_id = id).update(**validated_data, updated_by = token_user_id)
 
 		current_roles = set(

@@ -1,4 +1,4 @@
-from .models import company,employee,employee_type,employee_roles,roles,employee_salary_info
+from .models import company,employee,employee_type,employee_roles,roles,employee_salary_info, upload_path
 from rest_framework import  serializers
 
 class company_serializer(serializers.ModelSerializer):
@@ -26,24 +26,20 @@ class get_serializer(serializers.Serializer):
 	aadhar_number = serializers.CharField(required = False)
 	pan_number = serializers.CharField(required = False)
 	profile_picture_path = serializers.CharField(required = False)
-	employee_type = serializers.SerializerMethodField()
+	employee_type = serializers.PrimaryKeyRelatedField(source='type_id',queryset=employee_type.objects.all(),required=True)
 	roles = serializers.SerializerMethodField()
 
-	# def get_employee_type(self, obj):
-	# 	if obj.type_id:
-	# 		return {
-	# 			"type_id": obj.type_id.type_id,  
-	# 			"type": obj.type_id.type_name  
-	# 		}
-	# 	return None
-
 	def get_roles(self, obj):
-		roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
-		return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
+		print("obj-->",obj.employee_id)
+		roles = employee_roles.objects.filter(employee=obj.employee_id,is_active=True)
+		return roles.values_list('role__role_id', flat=True)
+			
+	# 	roles = employee_roles.objects.filter(employee=obj, is_active=True).select_related("role")
+	# 	return [{"role_id": role.role.role_id, "role_name": role.role.role_name} for role in roles]
 
-	def get_employee_type(self,obj):
-		type = employee_type.objects.filter(type_id = obj.type_id.type_id)
-		return [{'type_id': type.type_id, 'type_name': type.type_name} for type in type]
+	# def get_employee_type(self,obj):
+	# 	type = employee_type.objects.filter(type_id = obj.type_id.type_id)
+	# 	return [{'type_id': type.type_id, 'type_name': type.type_name} for type in type]
 
 	def to_representation(self, instance):
 		request = self.context['request']
@@ -56,8 +52,10 @@ class get_serializer(serializers.Serializer):
 		# data["gender"] = gender_map.get(gender_value, 0)
 		request_url = request.build_absolute_uri('/')[:-1]
 		file_directory = '/assets/profile_picture/'
-		if data['profile_picture_path'] != None:
+		if data['profile_picture_path']:
 			data['profile_picture_path'] = request_url + file_directory + data['profile_picture_path']
+		else:
+			data['profile_picture_path'] = "null"
 
 		# overwrite None values with empty strings
 		data = {key: "" if value is None else value for key, value in data.items()}
@@ -77,7 +75,7 @@ class create_serializer(serializers.Serializer):
 	pan_number = serializers.CharField(required = False)
 	profile_picture_path = serializers.CharField(required = False)
 	address = serializers.CharField(required = True)
-	role_ids = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
+	roles = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
 	date_of_joining = serializers.DateField(required = True)
 	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
 
@@ -92,6 +90,13 @@ class create_serializer(serializers.Serializer):
 			raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
 		return data
 	
+	def validate_roles(self, value):
+		# Ensure there are no duplicates in the provided role IDs
+		roles_set = {role for role in value}
+		if len(roles_set) != len(value):
+			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
+		return value
+	
 class update_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
 	first_name = serializers.CharField(required = True)
@@ -103,34 +108,35 @@ class update_serializer(serializers.Serializer):
 	phone = serializers.IntegerField(required = True)
 	aadhar_number = serializers.IntegerField(required = False)
 	pan_number = serializers.CharField(required = False)
-	profile_picture_path = serializers.CharField(required = False)
+	profile_picture_path = serializers.ImageField( required=False, allow_null=True)
 	address = serializers.CharField(required = False)
 	date_of_joining = serializers.DateField(required = False)
 	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required = True)
 	# This will directly accept a list of role IDs (primary keys)
-	role_ids = serializers.ListField(
+	roles = serializers.ListField(
 		child = serializers.PrimaryKeyRelatedField(
 			queryset = roles.objects.all()
 		),
 		required = True
 	)
 
-	def validate(self,data):
-		data['email'] = data['email'].lower()
-		user_exists = employee.objects.filter(email = data['email']).exclude(employee_id = self.instance.employee_id).exists()
-		if user_exists:
-			raise serializers.ValidationError({"error": "Email already exists."})
-		if len(str(data['phone'])) != 10:
-			raise serializers.ValidationError({"error": "Phone number must contain 10 digits"})
-		if data['gender'] not in [0,1]:
-			raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
+	# def validate(self,data):
+	# 	if 'email' in data:
+	# 		data['email'] = data['email'].lower()
+	# 		user_exists = employee.objects.filter(email = data['email']).exclude(employee_id = self.instance.employee_id).exists()
+	# 		if user_exists:
+	# 			raise serializers.ValidationError({"error": "Email already exists."})
+	# 	if len(str(data['phone'])) != 10:
+	# 		raise serializers.ValidationError({"error": "Phone number must contain 10 digits"})
+	# 	if data['gender'] not in [0,1]:
+	# 		raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
 
-		return data
+	# 	return data
 
-	def validate_role_ids(self, value):
+	def validate_roles(self, value):
 		# Ensure there are no duplicates in the provided role IDs
-		role_ids_set = {role for role in value}
-		if len(role_ids_set) != len(value):
+		roles_set = {role for role in value}
+		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
 		return value
 

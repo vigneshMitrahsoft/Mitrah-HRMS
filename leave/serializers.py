@@ -15,6 +15,17 @@ class get_leavebalance_serializer(serializers.ModelSerializer):
 		model = employee_leave_balances
 		fields = "__all__"
 
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+		permission = data['permission_hours']
+		try:
+			hours = int(permission)
+			minutes = round((permission - hours) * 60)
+			data['permission_hours'] = f"{hours} hour and {minutes} minutes"
+		except:
+			pass
+		return data
+
 class create_employee_applied_leaves_days(serializers.Serializer):
 	# applied_leave_request_id = serializers.PrimaryKeyRelatedField(queryset=employee_applied_leaves.objects.all(), required=True)
 	leave_date = serializers.DateField(required = True)
@@ -58,6 +69,9 @@ class create_employee_applied_leaves(serializers.Serializer):
 			
 			elif session_data['leave_date'] in check_dates:
 				error['session_data_error'] = "Leave date should be unique"
+
+			elif session_data['session']  not in ['Morning','Evening', 'Full Day']:
+				error['session_data_error'] = "Session must be Morning or Evening or Full Day"
 			else:
 				check_dates.append(session_data['leave_date'])
 			leave_data = employee_applied_leaves.objects.filter(employee_id=data['employee_id'].employee_id, leave_days__leave_date=session_data['leave_date']).exclude(leave_days__status='Cancelled')
