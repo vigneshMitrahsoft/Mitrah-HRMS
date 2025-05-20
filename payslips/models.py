@@ -19,6 +19,7 @@ class Payslip(models.Model):
 	employer_esi = models.FloatField(blank=True, null=True)
 	loan_emi = models.FloatField(blank=True, null=True)
 	lop = models.FloatField(blank=True, null=True)
+	tax_deduction = models.FloatField(blank=True, null=True)
 	net_pay = models.FloatField(blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)

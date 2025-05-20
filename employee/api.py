@@ -3,6 +3,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
+from taxdeduction.models import financial_year,tax_regimes,emoloyee_tax_regimes
 from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
 from holiday.models import holiday
@@ -20,7 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.state import token_backend
 from leave.serializers import create_leavebalance_serializer
-from datetime import datetime,timedelta
+from datetime import date, datetime,timedelta
 from dateutil.relativedelta import relativedelta
 from auth.views import IsAuthorized
 import base64
@@ -108,8 +109,31 @@ def create_employee(request):
 			)
 			for role in roles_data
 		]
-
 		employee_roles.objects.bulk_create(employee_role_objs)
+		# employee_regime 
+		today = date.today()
+		current_year = today.year
+		next_year = current_year + 1
+		fy_start = date(current_year, 4, 1)
+		fy_end = date(next_year, 3, 31)
+
+		try:
+			current_fy = financial_year.objects.get(start_date=fy_start, end_date=fy_end, is_active=True)
+		except financial_year.DoesNotExist:
+			raise ValueError("Current financial year not found or inactive")
+
+		try:
+			new_regime = tax_regimes.objects.get(regime_name="New Regime")
+		except tax_regimes.DoesNotExist:
+			raise ValueError("New Regime not found")
+
+		emoloyee_tax_regimes.objects.create(
+			employee_id=create_employee,
+			tax_regime=new_regime,
+			financial_year=current_fy,
+			# selected_on=today,
+			is_active=True
+		)
 		company_data = company.objects.get(company_id = request.data['company_id'])
 		company_settings_data = company_Settings.objects.get(company = company_data)
 		leave_balance_data = {
