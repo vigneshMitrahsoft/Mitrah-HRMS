@@ -81,7 +81,6 @@ def get_employees(request):
 @transaction.atomic
 def create_employee(request):
 	data = request.data
-	print("data--->",data)
 	token_user_id = request.user.employee_id
 	serializer = create_serializer(data = data)
 	if not serializer.is_valid():

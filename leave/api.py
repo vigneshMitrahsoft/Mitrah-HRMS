@@ -67,7 +67,6 @@ def check_existing_permission(data,id = 0):
 	# end_time = datetime.strptime(data['end_time'], "%H:%M").time()
 	if check:
 		for check_value in check:
-			print("hiii-->",check_value.employee,check_value.start_time, check_value.end_time)
 			if check_value.start_time <= start_time <= check_value.end_time:
 				return True
 	else:
@@ -339,9 +338,12 @@ def apply_employee_permission(request):
 @permission_classes((IsAuthenticated,))
 def update_employee_permission(request,id):
 	token_user_id = request.user.employee_id
+	emp_applied_permission = employee_applied_permissions.objects.get(permission_id = id)
+	emp_id = emp_applied_permission.employee.employee_id
 	data = request.data
+	data['employee'] = emp_id
 	if 'status' in data:
-		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = emp_id)
 		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
 		if data['status'] == 'Cancelled':
 			applied_permission_start_time = applied_permission.start_time
@@ -356,21 +358,24 @@ def update_employee_permission(request,id):
 			employee_permission_balance.save()
 
 	if ('start_time' in data) and ('end_time' in data):
-		print("hiiii--->",data['start_time'],data['end_time'])
 		if data['end_time'] < data['start_time']:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"End date msut be greater"}, status=status.HTTP_400_BAD_REQUEST)
 		check_exist_permission  = check_existing_permission(data,id)
 		if check_exist_permission:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
 		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
-		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = emp_id)
 		applied_hours = calculate_applied_hours(data['start_time'], data['end_time'])
 		applied_employee_start_time = applied_permission.start_time
 		applied_employee_end_time = applied_permission.end_time
 		applied_employee_start_time = applied_employee_start_time.strftime("%H:%M")
 		applied_employee_end_time = applied_employee_end_time.strftime("%H:%M")
 		previous_hours = calculate_applied_hours(applied_employee_start_time, applied_employee_end_time)
-		balance_duration = employee_permission_balance.permission_hours + previous_hours
+		if employee_permission_balance.permission_hours is None:
+			employee_permission_hours = 0
+		else:
+			employee_permission_hours = employee_permission_balance.permission_hours
+		balance_duration = employee_permission_hours + previous_hours
 		if applied_hours <= balance_duration:
 			serializer = create_applied_permission(applied_permission, data = data, partial = True)
 			if serializer.is_valid():
