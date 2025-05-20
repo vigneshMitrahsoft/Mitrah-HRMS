@@ -25,7 +25,7 @@ def check_employee_exists(employee_id):
 	try:
 		employee_info = employee.objects.get(employee_id=employee_id, is_active=True)
 	except employee.DoesNotExist:
-		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Loan not found"})
+		raise APIException(detail={"statuscode": 404, "status": "error", "message": "employee not found"})
 	return employee_info
 
 @api_view(('GET',))
