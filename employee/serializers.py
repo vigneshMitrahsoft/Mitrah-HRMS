@@ -63,21 +63,21 @@ class get_serializer(serializers.Serializer):
 		return data
 
 class create_serializer(serializers.Serializer):
-	company_id = serializers.PrimaryKeyRelatedField(queryset=company.objects.all(), required=True)
+	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
 	first_name = serializers.CharField(required = True)
 	last_name = serializers.CharField(required = True)
 	email = serializers.EmailField(required = True)
 	password = serializers.CharField(required = True)
 	date_of_birth = serializers.DateField(required = True)
 	gender = serializers.IntegerField(required = True)
-	phone = serializers.IntegerField(required = True)
-	aadhar_number = serializers.IntegerField(required = False)
-	pan_number = serializers.CharField(required = False)
-	profile_picture_path = serializers.CharField(required = False)
-	address = serializers.CharField(required = True)
-	roles = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=roles.objects.all()), required=True)
+	phone = serializers.CharField(required = True)
+	aadhar_number = serializers.CharField(required = False, allow_blank = True)
+	pan_number = serializers.CharField(required = False, allow_blank = True)
+	profile_picture_path = serializers.ImageField(required = False)
+	address = serializers.CharField(required = False, allow_blank = True)
+	roles = serializers.ListField(child = serializers.PrimaryKeyRelatedField(queryset = roles.objects.all()), required = True)
 	date_of_joining = serializers.DateField(required = True)
-	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required=True)
+	type_id = serializers.PrimaryKeyRelatedField(queryset = employee_type.objects.all(), required=True)
 
 	def validate(self,data):
 		data['email'] = data['email'].lower()
@@ -96,22 +96,22 @@ class create_serializer(serializers.Serializer):
 		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
 		return value
-	
+
 class update_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
 	first_name = serializers.CharField(required = True)
 	last_name = serializers.CharField(required = True)
 	email = serializers.EmailField(required = True)
-	password = serializers.CharField(required = False)
+	# password = serializers.CharField(required = False)
 	date_of_birth = serializers.DateField(required = True)
 	gender = serializers.IntegerField(required = True)
-	phone = serializers.IntegerField(required = True)
-	aadhar_number = serializers.IntegerField(required = False)
-	pan_number = serializers.CharField(required = False)
-	profile_picture_path = serializers.ImageField( required=False, allow_null=True)
-	address = serializers.CharField(required = False)
+	phone = serializers.CharField(required = True)
+	aadhar_number = serializers.CharField(required = False, allow_blank = True)
+	pan_number = serializers.CharField(required = False, allow_blank = True)
+	profile_picture_path = serializers.ImageField( required = False)
+	address = serializers.CharField(required = False, allow_blank = True)
 	date_of_joining = serializers.DateField(required = False)
-	type_id = serializers.PrimaryKeyRelatedField(queryset=employee_type.objects.all(), required = True)
+	type_id = serializers.PrimaryKeyRelatedField(queryset = employee_type.objects.all(), required = True)
 	# This will directly accept a list of role IDs (primary keys)
 	roles = serializers.ListField(
 		child = serializers.PrimaryKeyRelatedField(
