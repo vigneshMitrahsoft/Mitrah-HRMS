@@ -1,12 +1,10 @@
 from django.db import models
 import os
 # Create your models here.
-
 def upload_path(instance, filename):
 	ext = filename.split('.')[-1]
 	filename = f"{instance.company_id}_profile.{ext}"
 	return os.path.join('company_logo/', filename)
-
 class company(models.Model):
     company_id = models.BigAutoField(primary_key=True)
     company_name = models.CharField(max_length=100)

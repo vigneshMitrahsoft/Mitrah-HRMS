@@ -24,7 +24,7 @@ class companySerializer(serializers.ModelSerializer):
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
-	company_logo_path = serializers.CharField(required = False)
+	company_logo = serializers.ImageField(required = False)
 	hra = serializers.FloatField()
 	employer_ESI = serializers.FloatField()
 	employee_ESI = serializers.FloatField()
@@ -73,4 +73,4 @@ class companyUpdateSerializer(serializers.Serializer):
 	casual_leaves = serializers.FloatField()
 	basic_pay = serializers.FloatField()
 	other_allowances = serializers.FloatField()
-	permission_hours = serializers.TimeField()
+	permission_hours = serializers.FloatField()

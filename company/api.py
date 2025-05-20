@@ -1,6 +1,6 @@
 from datetime import datetime
-from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from .models import company, company_Settings
 from .serializers import companySerializer, companyCreateSerializer, companyUpdateSerializer
 from rest_framework.response import Response
@@ -27,6 +27,7 @@ def specific_company(request, pk):
 	serializer = companySerializer(comp, context = {'request': request})
 	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
+@parser_classes([MultiPartParser, FormParser])
 @api_view(('POST',))
 @transaction.atomic
 def company_create(request):
@@ -36,13 +37,13 @@ def company_create(request):
 	else:
 		data = serializer.validated_data
 		try:
-			comp = company.objects.create(company_name = data['company_name'], address = data['address'], created_at = datetime.now())
+			comp = company.objects.create(company_name = data['company_name'], address = data['address'],created_at = datetime.now())
 			if 'company_logo' in request.FILES:
 				image = request.FILES['company_logo']
 				comp.company_logo_path = image
 				comp.save()
-				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
-				comp.save(update_fields=['company_logo_path'])
+			comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
+			comp.save(update_fields=['company_logo_path'])
 
 			company_Settings.objects.create(
 				company = comp,
@@ -68,15 +69,30 @@ def company_create(request):
 				"message": str(e)
 			}, status=status.HTTP_400_BAD_REQUEST)
 
+@parser_classes([MultiPartParser, FormParser])
 @api_view(('PATCH',))
 def company_update(request,pk):
 	comp = check_company_exists(pk)
 	serializer = companyUpdateSerializer(comp, data = request.data, partial = True)
 	if serializer.is_valid():
 		datas = serializer.validated_data
-		comp = company.objects.filter(company_id = pk).update(company_name = datas['company_name'] ,address = datas['address'], updated_at = datetime.now())
+		comp = company.objects.get(company_id = pk)
+		comp.company_name = datas.get('company_name', comp.company_name) ,
+		comp.address = datas.get('address', comp.address),
+		comp.updated_at = datetime.now()
+		if 'company_logo' in request.FILES:
+			new_image = request.FILES['company_logo']
+			directory = os.path.join("assets", "company_logo")
+			previous_file_name = comp.company_logo_path
+			old_file = os.path.join(directory, f"{previous_file_name}")
+			if os.path.exists(old_file):
+				os.remove(old_file)
+				comp.company_logo_path= new_image
+				comp.save()
+				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
+				comp.save(update_fields=['company_logo_path'])
 		company_Settings.objects.filter(company_id = pk).update(
-			hra = datas['hra'],
+			HRA = datas['hra'],
 			employer_ESI = datas['employer_ESI'],
 			employee_ESI = datas['employee_ESI'],
 			employer_PF = datas['employer_PF'],
