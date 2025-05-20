@@ -12,4 +12,5 @@ __pycache__
 */migrations/*
 !*/migrations/__init__.py
 assets/profile_picture/*
+assets/company_logo/*
 settings_local.py
