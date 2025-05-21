@@ -94,23 +94,25 @@ def get_employees(request):
 def create_employee(request):
 	data = request.data
 	token_user_id = request.user.employee_id
+	# print(type(data['roles']))
+	# if type(data['roles']) == str:
+	# 	# type casting
+	# 	mutuable_data = type_casting(data)
 
-	# type casting
-	mutuable_data = type_casting(data)
+	# 	if 'password' not in data:
+	# 		mutuable_data['password'] = 'wiki21@HRMS'
+	# 	serializer = create_serializer(data = mutuable_data)
+	serializer = create_serializer(data = data)
 
-	if 'password' not in data:
-		mutuable_data['password'] = 'wiki21@HRMS'
-
-	serializer = create_serializer(data = mutuable_data)
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 	data = serializer.validated_data
 	plain_password = data.get('password')
 	if plain_password:
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
+	data.pop('profile_picture_path')
 	try:
 		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 
@@ -163,8 +165,8 @@ def create_employee(request):
 		else:
 			raise  ValueError(serializer.errors)
 
-		if 'profile_picture' in request.FILES:
-			image = request.FILES['profile_picture']
+		if 'profile_picture_path' in request.FILES:
+			image = request.FILES['profile_picture_path']
 			create_employee.profile_picture_path = image
 			create_employee.save()
 			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
@@ -175,7 +177,7 @@ def create_employee(request):
 		transaction.set_rollback(True)
 		return Response({
 			"status": "error",
-			"message": str(e)
+			"message": str(e),
 		}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('PATCH',))
@@ -237,11 +239,12 @@ def update_employee(request, id):
 
 		if 'profile_picture_path' in request.FILES:
 			image = request.FILES['profile_picture_path']
-			directory = os.path.join("assets", "profile_picture_path")
-			previous_file_name = employee_data.profile_picture_path
-			old_file = os.path.join(directory, f"{previous_file_name}")
-			if os.path.exists(old_file):
-				os.remove(old_file)
+			directory = os.path.join("assets", "profile_picture")
+			previous_file_name = employee_data.profile_picture_path if employee_data.profile_picture_path else None
+			if previous_file_name:
+				old_file = os.path.join(directory, f"{previous_file_name}")
+				if os.path.exists(old_file):
+					os.remove(old_file)
 			employee_data.profile_picture_path = image
 			employee_data.save()
 			employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
