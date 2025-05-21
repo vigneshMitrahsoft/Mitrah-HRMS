@@ -42,8 +42,8 @@ def company_create(request):
 				image = request.FILES['company_logo']
 				comp.company_logo_path = image
 				comp.save()
-			comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
-			comp.save(update_fields=['company_logo_path'])
+				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
+				comp.save(update_fields=['company_logo_path'])
 
 			company_Settings.objects.create(
 				company = comp,
@@ -83,14 +83,15 @@ def company_update(request,pk):
 		if 'company_logo' in request.FILES:
 			new_image = request.FILES['company_logo']
 			directory = os.path.join("assets", "company_logo")
-			previous_file_name = comp.company_logo_path
-			old_file = os.path.join(directory, f"{previous_file_name}")
-			if os.path.exists(old_file):
-				os.remove(old_file)
-				comp.company_logo_path= new_image
-				comp.save()
-				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
-				comp.save(update_fields=['company_logo_path'])
+			previous_file_name = comp.company_logo_path if comp.company_logo_path else None
+			if previous_file_name:
+				old_file = os.path.join(directory, f"{previous_file_name}")
+				if os.path.isfile(old_file):
+					os.remove(old_file)
+			comp.company_logo_path= new_image
+			comp.save()
+			comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
+			comp.save(update_fields=['company_logo_path'])
 		company_Settings.objects.filter(company_id = pk).update(
 			HRA = datas['hra'],
 			employer_ESI = datas['employer_ESI'],

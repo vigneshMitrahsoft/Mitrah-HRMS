@@ -21,7 +21,7 @@ class get_leavebalance_serializer(serializers.ModelSerializer):
 		try:
 			hours = int(permission)
 			minutes = round((permission - hours) * 60)
-			data['permission_hours'] = f"{hours} hour and {minutes} minutes"
+			data['permission_hours_as_string'] = f"{hours} hour and {minutes} minutes"
 		except:
 			pass
 		return data

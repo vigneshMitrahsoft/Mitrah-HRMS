@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes,  parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer,create_salary_info_serializer
+from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer,create_salary_info_serializer,get_roles
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -55,16 +55,6 @@ import json
 # 	except Exception as e:
 # 		print("Error:", e)
 # 		return e
-
-def type_casting(data):
-	mutuable_data = data.copy()
-	if 'roles' in data:
-		roles = data.get('roles')
-		roles = json.loads(roles)
-		roles = [int(role_id) for role_id in roles]
-		mutuable_data.setlist('roles', roles)
-
-	return mutuable_data
 	
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
@@ -94,16 +84,8 @@ def get_employees(request):
 def create_employee(request):
 	data = request.data
 	token_user_id = request.user.employee_id
-	# print(type(data['roles']))
-	# if type(data['roles']) == str:
-	# 	# type casting
-	# 	mutuable_data = type_casting(data)
 
-	# 	if 'password' not in data:
-	# 		mutuable_data['password'] = 'wiki21@HRMS'
-	# 	serializer = create_serializer(data = mutuable_data)
 	serializer = create_serializer(data = data)
-
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	data = serializer.validated_data
@@ -193,14 +175,11 @@ def update_employee(request, id):
 	data = request.data
 	token_user_id = request.user.employee_id
 
-	# type casting
-	mutuable_data = type_casting(data)
-
 	# Profile picture will be uploaded at last, once all transactions are done
 	if 'profile_picture_path' in request.FILES:
-		mutuable_data.pop('profile_picture_path')
+		data.pop('profile_picture_path')
 
-	serializer = update_serializer(employee_data, data = mutuable_data, partial = True)
+	serializer = update_serializer(employee_data, data = data, partial = True)
 	if serializer.is_valid():
 		validated_data = serializer.validated_data
 
@@ -314,4 +293,12 @@ def get_employee_salary(request,id):
 	except employee_salary_info.DoesNotExist:
 		return Response({"detail": "Employee salary not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = create_salary_info_serializer(data)
+	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
+
+@api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr']) 
+def get_employee_roles(request):
+	data = roles.objects.all()
+	serialized_data = get_roles(data,many = True)
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)

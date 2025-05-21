@@ -24,7 +24,7 @@ class companySerializer(serializers.ModelSerializer):
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
-	company_logo = serializers.ImageField(required = False)
+	company_logo = serializers.ImageField(required = False, allow_null = True)
 	hra = serializers.FloatField()
 	employer_ESI = serializers.FloatField()
 	employee_ESI = serializers.FloatField()
