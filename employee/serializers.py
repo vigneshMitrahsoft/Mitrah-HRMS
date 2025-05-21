@@ -144,3 +144,7 @@ class create_salary_info_serializer(serializers.ModelSerializer):
 	class Meta:
 		model = employee_salary_info
 		fields = "__all__"
+
+class get_roles(serializers.Serializer):
+	role_id = serializers.IntegerField()
+	role_name = serializers.CharField(required = True)
