@@ -12,6 +12,7 @@ from rest_framework import status
 from loan.models import LoanDeduction #, permission_classes
 from payslips.models import Payslip
 from payslips.serializer import PayslipSerializer, PayslipStatusUpdateSerializer
+from taxdeduction.api import calculate_employee_tax_deduction
 # @api_view(['GET'])
 # def generate_payslip(request, id):
 # 	employee_instance = employee.objects.get(employee_id=id)
@@ -248,7 +249,8 @@ def get_payslip(request, id):
 			"employer_pf": payslip.employer_pf,
 			"employer_esi": payslip.employer_esi,
 			"loan_emi": payslip.loan_emi,
-			"lop": payslip.lop
+			"lop": payslip.lop,
+			"tax_deduction": payslip.tax_deduction
 		},
 		"net_pay": payslip.net_pay
 	}
@@ -308,7 +310,8 @@ def get_all_payslips(request):
 				"employer_pf": payslip.employer_pf,
 				"employer_esi": payslip.employer_esi,
 				"loan_emi": payslip.loan_emi,
-				"lop": payslip.lop
+				"lop": payslip.lop,
+				"tax_deduction": payslip.tax_deduction
 			},
 			"net_pay": payslip.net_pay,
 			"status": payslip.status
@@ -368,8 +371,12 @@ def generate_all_payslips(request):
 					loan_emi = loan.fixed_amount
 				elif loan.percentage_amount:
 					loan_emi = (loan.percentage_amount / 100) * employee_salary.gross_salary
+			# Tax deduction
+			monthly_tax_deduction = 0
+			monthly_tax_deduction = calculate_employee_tax_deduction(emp.employee_id, ctc)
+			print(monthly_tax_deduction, "monthly_tax_deduction")
 			# Final amounts
-			total_deductions = employee_pf_deduction + employee_esi_deduction + lop_amount + loan_emi
+			total_deductions = employee_pf_deduction + employee_esi_deduction + lop_amount + loan_emi + monthly_tax_deduction
 			net_pay = total_earnings - total_deductions
 			# Avoid duplicates
 			month_name = given_date.strftime('%B')
@@ -391,6 +398,7 @@ def generate_all_payslips(request):
 				employer_esi=round(employer_esi, 2),
 				loan_emi=round(loan_emi, 2),
 				lop=round(lop_amount, 2),
+				tax_deduction=round(monthly_tax_deduction, 2),
 				net_pay=round(net_pay, 2),
 				status="pending",
 				updated_by=request.user.id if request.user.is_authenticated else None

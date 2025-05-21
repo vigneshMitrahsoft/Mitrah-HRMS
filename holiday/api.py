@@ -1,26 +1,17 @@
-import openpyxl
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import *
 from rest_framework.decorators import api_view
-import base64
-import io
 from .models import holiday
 import pandas as pd
 
-
 @api_view(['POST'])
-def index(request):    
+def import_holidays(request):
+	serializer = excel_serializer(data=request.data)
+	if serializer.is_valid():
+		excel_file = serializer.validated_data['excel_file']
 	try:
-		decoded_file = base64.b64decode(request.body)
-		excel_file = io.BytesIO(decoded_file)
-		wb = openpyxl.load_workbook(excel_file) #io.BytesIO: Creates an in-memory file-like object.
-		
-		worksheet = wb[wb.sheetnames[0]]
-		data = worksheet.values
-		columns = next(data)  # First row as column names
-		
-		df = pd.DataFrame(data, columns = columns)
+		df = pd.read_excel(excel_file)
 		df.columns = [col.strip().lower() for col in df.columns]
 		required_columns = [
 			'holiday date',
@@ -48,28 +39,25 @@ def index(request):
 
 		created, updated = [], []
 		for _, row in df.iterrows():
-				date = row['holiday_date'].date()
-				occasion = str(row['occasion']).strip()
-				leave_type = str(row['leave_type']).strip()
-				#, is_created
-				holiday_obj, is_created = holiday.objects.update_or_create(
-						holiday_date = date,
-						defaults={
-								'occasion': occasion,
-								'leave_type': leave_type
-						}
+			date = row['holiday_date'].date()
+			occasion = str(row['occasion']).strip()
+			leave_type = str(row['leave_type']).strip()
+			is_created = holiday.objects.update_or_create(
+			holiday_date = date,
+			defaults={
+				'occasion': occasion,
+				'leave_type': leave_type
+				}
 				)
-				
-				entry = {
-					"holiday_date": str(date),
-					"occasion": occasion,
-					"leave_type": leave_type
-					}
-				if is_created:
-					created.append(entry)
-				else:
-					updated.append(entry)
-
+			entry = {
+				"holiday_date": str(date),
+				"occasion": occasion,
+				"leave_type": leave_type
+			}
+			if is_created:
+				created.append(entry)
+			else:
+				updated.append(entry)
 		return Response({"statuscode": status.HTTP_200_OK, "status": "success", "created": created,"updated": updated}, status = status.HTTP_200_OK)
 		
 	except Exception as e:
@@ -78,7 +66,7 @@ def index(request):
 @api_view(['POST'])
 def create_holiday(request):
 	try:
-		serializer = holidayCreateSerializer(data = request.data)
+		serializer = holiday_create_serializer(data = request.data)
 		if serializer.is_valid():
 			data = serializer.validated_data            
 			holiday.objects.create(**data)
@@ -95,7 +83,7 @@ def update_holiday(request, id):
 	except holiday.DoesNotExist:
 		return Response({"statuscode" : status.HTTP_404_NOT_FOUND,"status": "error", "message": "Holiday not found"}, status = status.HTTP_404_NOT_FOUND)
 	
-	serializer = holidayUpdateSerializer(holiday_obj, data = request.data, partial = True)
+	serializer = holiday_update_serializer(holiday_obj, data = request.data, partial = True)
 	
 	if serializer.is_valid():
 		holiday.objects.filter(holiday_id = id).update(**serializer.validated_data)        

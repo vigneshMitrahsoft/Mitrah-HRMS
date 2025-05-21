@@ -3,6 +3,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
+from taxdeduction.models import financial_year,tax_regimes,emoloyee_tax_regimes
 from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
 from holiday.models import holiday
@@ -20,13 +21,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.state import token_backend
 from leave.serializers import create_leavebalance_serializer
-from datetime import datetime,timedelta
+from datetime import date, datetime,timedelta
 from dateutil.relativedelta import relativedelta
 from auth.views import IsAuthorized
 import base64
 import imghdr
 import os
 from django.db import transaction
+import json
 
 # def upload_image(id, encode_string, image_for):
 # 	base64_string = encode_string
@@ -53,6 +55,16 @@ from django.db import transaction
 # 	except Exception as e:
 # 		print("Error:", e)
 # 		return e
+
+def type_casting(data):
+	mutuable_data = data.copy()
+	if 'roles' in data:
+		roles = data.get('roles')
+		roles = json.loads(roles)
+		roles = [int(role_id) for role_id in roles]
+		mutuable_data.setlist('roles', roles)
+
+	return mutuable_data
 	
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
@@ -82,10 +94,17 @@ def get_employees(request):
 def create_employee(request):
 	data = request.data
 	token_user_id = request.user.employee_id
-	serializer = create_serializer(data = data)
+
+	# type casting
+	mutuable_data = type_casting(data)
+
+	if 'password' not in data:
+		mutuable_data['password'] = 'wiki21@HRMS'
+
+	serializer = create_serializer(data = mutuable_data)
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-	
+
 	data = serializer.validated_data
 	plain_password = data.get('password')
 	if plain_password:
@@ -94,12 +113,7 @@ def create_employee(request):
 	roles_data = data.pop('roles')
 	try:
 		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
-		if 'profile_picture' in request.FILES:
-			image = request.FILES['profile_picture']
-			create_employee.profile_picture_path = image
-			create_employee.save()
-			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
-			create_employee.save(update_fields=['profile_picture_path'])
+
 		employee_role_objs = [
 			employee_roles(
 				employee_id=create_employee.employee_id,
@@ -109,6 +123,30 @@ def create_employee(request):
 		]
 
 		employee_roles.objects.bulk_create(employee_role_objs)
+		# employee_regime 
+		today = date.today()
+		current_year = today.year
+		next_year = current_year + 1
+		fy_start = date(current_year, 4, 1)
+		fy_end = date(next_year, 3, 31)
+
+		try:
+			current_fy = financial_year.objects.get(start_date=fy_start, end_date=fy_end, is_active=True)
+		except financial_year.DoesNotExist:
+			raise ValueError("Current financial year not found or inactive")
+
+		try:
+			new_regime = tax_regimes.objects.get(regime_name="New Regime")
+		except tax_regimes.DoesNotExist:
+			raise ValueError("New Regime not found")
+
+		emoloyee_tax_regimes.objects.create(
+			employee_id=create_employee,
+			tax_regime=new_regime,
+			financial_year=current_fy,
+			# selected_on=today,
+			is_active=True
+		)
 		company_data = company.objects.get(company_id = request.data['company_id'])
 		company_settings_data = company_Settings.objects.get(company = company_data)
 		leave_balance_data = {
@@ -124,8 +162,15 @@ def create_employee(request):
 			employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
 		else:
 			raise  ValueError(serializer.errors)
-		
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+
+		if 'profile_picture' in request.FILES:
+			image = request.FILES['profile_picture']
+			create_employee.profile_picture_path = image
+			create_employee.save()
+			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
+			create_employee.save(update_fields=['profile_picture_path'])
+
+		return Response({"statuscode":status.HTTP_201_CREATED, "status":"success", "message":"created successfully", "data": {'employee_id': create_employee.employee_id}}, status=status.HTTP_201_CREATED)
 	except Exception as e:
 		transaction.set_rollback(True)
 		return Response({
@@ -138,31 +183,29 @@ def create_employee(request):
 @IsAuthorized(['hr'])
 @parser_classes([MultiPartParser, FormParser])
 def update_employee(request, id):
-	data = request.data
-	token_user_id = request.user.employee_id
 	try:
 		employee_data = employee.objects.get(employee_id = id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
-	if 'profile_picture' in request.FILES:
-		image = request.FILES['profile_picture']
-		directory = os.path.join("assets", "profile_picture")
-		previous_file_name = employee_data.profile_picture_path
-		old_file = os.path.join(directory, f"{previous_file_name}")
-		if os.path.exists(old_file):
-			os.remove(old_file)
-		employee_data.profile_picture_path = image
-		employee_data.save()
-		employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
-		employee_data.save(update_fields=['profile_picture_path'])
-	
-	serializer = update_serializer(employee_data, data = data, partial = True)
+
+	data = request.data
+	token_user_id = request.user.employee_id
+
+	# type casting
+	mutuable_data = type_casting(data)
+
+	# Profile picture will be uploaded at last, once all transactions are done
+	if 'profile_picture_path' in request.FILES:
+		mutuable_data.pop('profile_picture_path')
+
+	serializer = update_serializer(employee_data, data = mutuable_data, partial = True)
 	if serializer.is_valid():
 		validated_data = serializer.validated_data
 
 		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
 		if 'roles' in validated_data:
 			validated_data.pop('roles')
+
 		employee.objects.filter(employee_id = id).update(**validated_data, updated_by = token_user_id)
 
 		current_roles = set(
@@ -192,6 +235,18 @@ def update_employee(request, id):
 						updated_by = token_user_id
 					)
 
+		if 'profile_picture_path' in request.FILES:
+			image = request.FILES['profile_picture_path']
+			directory = os.path.join("assets", "profile_picture_path")
+			previous_file_name = employee_data.profile_picture_path
+			old_file = os.path.join(directory, f"{previous_file_name}")
+			if os.path.exists(old_file):
+				os.remove(old_file)
+			employee_data.profile_picture_path = image
+			employee_data.save()
+			employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
+			employee_data.save(update_fields=['profile_picture_path'])
+
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
 			status=status.HTTP_200_OK,
@@ -219,7 +274,7 @@ def create_employee_salary_info(request):
 	if serializer.is_valid():
 		data = serializer.validated_data
 		salary_info = employee_salary_info.objects.create(**data, created_by = request.user.employee_id, updated_by = request.user.employee_id)
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully", "data" :{"salary_id": salary_info.salary_id}},status=status.HTTP_201_CREATED)
 	else:
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
@@ -252,7 +307,7 @@ def get_employees_salary(request):
 @IsAuthorized(['hr'])
 def get_employee_salary(request,id):
 	try:
-		data = employee_salary_info.objects.get(salary_id = id)
+		data = employee_salary_info.objects.get(employee_id = id)
 	except employee_salary_info.DoesNotExist:
 		return Response({"detail": "Employee salary not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = create_salary_info_serializer(data)

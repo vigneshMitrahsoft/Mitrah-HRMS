@@ -264,7 +264,7 @@ def update_employee_applied_leaves(request, id):
 						create_attendance_info = employees_attendance_info.objects.create(**apply_data, action_by = token_user_id)
 					else:
 						raise ValueError(serializer.errors)
-	except:
+	except Exception as e:
 		transaction.set_rollback(True)
 		return Response({
 			"status": "error",
@@ -402,10 +402,10 @@ def update_employee_permission(request,id):
 			employee_permission_balance.permission_hours = value
 			employee_permission_balance.updated_by = token_user_id
 			employee_permission_balance.save()
-			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
+			return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission updated successfully"},status=status.HTTP_201_CREATED)
 		else:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"Infuccient permission balance"}, status=status.HTTP_400_BAD_REQUEST)
-	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission applied successfully"},status=status.HTTP_201_CREATED)
+	return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"Permission updated successfully"},status=status.HTTP_201_CREATED)
 
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))

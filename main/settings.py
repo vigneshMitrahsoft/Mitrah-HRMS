@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     "holiday",
 	"payslips",
 	"dashboard",
-	"subscription"
+	"subscription",
+	"taxdeduction"
 ]
 
 
