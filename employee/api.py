@@ -3,7 +3,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
-from taxdeduction.models import financial_year,tax_regimes,emoloyee_tax_regimes
+from taxdeduction.models import financial_year,tax_regimes,employee_tax_regimes
 from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
 from holiday.models import holiday
@@ -124,7 +124,7 @@ def create_employee(request):
 		except tax_regimes.DoesNotExist:
 			raise ValueError("New Regime not found")
 
-		emoloyee_tax_regimes.objects.create(
+		employee_tax_regimes.objects.create(
 			employee_id=create_employee,
 			tax_regime=new_regime,
 			financial_year=current_fy,

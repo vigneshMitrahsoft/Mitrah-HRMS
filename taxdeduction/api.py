@@ -3,9 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from dashboard.api import check_employee_exists
-from taxdeduction.serializer import TaxSlabSerializer
-from .models import financial_year, tax_regimes, tax_slabs, emoloyee_tax_regimes
+from taxdeduction.serializer import TaxSlabSerializer, UpdateTaxregimeSerializer
+from .models import financial_year, tax_regimes, tax_slabs, employee_tax_regimes
 from datetime import date
 from decimal import Decimal
 
@@ -69,8 +68,6 @@ def setup_tax_slabs(request):
 				{"statuscode" : status.HTTP_400_BAD_REQUEST, "status" : "error", "message" : "payload not found"},
 				status=status.HTTP_400_BAD_REQUEST
 			)
-			# raise APIException(detail={"statuscode": 404, "status": "error", "message": "Slab payload not found"})
-
 		today = date.today()
 		current_year = today.year
 		next_year = current_year + 1
@@ -80,8 +77,7 @@ def setup_tax_slabs(request):
 		try:
 			fy = financial_year.objects.get(start_date=fy_start, end_date=fy_end, is_active=True)
 		except financial_year.DoesNotExist:
-			return Response({"error": "Financial year not found."}, status=status.HTTP_400_BAD_REQUEST)
-
+			return APIException({"error": "Financial year not found."}, status=status.HTTP_400_BAD_REQUEST)
 		created_slabs = []
 		skipped = []
 
@@ -90,8 +86,7 @@ def setup_tax_slabs(request):
 			try:
 				regime = tax_regimes.objects.get(regime_name=regime_name)
 			except tax_regimes.DoesNotExist:
-				return Response({"error": f"Tax regime '{regime_name}' not found."}, status=status.HTTP_400_BAD_REQUEST)
-
+				raise APIException(detail={"statuscode": 404, "status": "error", "message": f"Tax regime '{regime_name}' not found."})
 			for slab in slab_group.get('slab_data', []):
 				slab_from = slab.get('slab_from')
 				slab_to = slab.get('slab_to')
@@ -124,9 +119,7 @@ def setup_tax_slabs(request):
 					is_active=True
 				)
 				created_slabs.append(slab_obj)
-				
 		serializer = TaxSlabSerializer(created_slabs, many=True)
-
 		return Response({
 			"message": "Tax slabs created successfully.",
 			"created_slabs": serializer.data,
@@ -134,11 +127,9 @@ def setup_tax_slabs(request):
 		}, status=status.HTTP_201_CREATED)
 	
 	except financial_year.DoesNotExist:
-		return Response({"error": "Active financial year not found."}, status=status.HTTP_400_BAD_REQUEST)
-
+		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Active financial year not found."})
 	except tax_regimes.DoesNotExist:
-		return Response({"error": "Tax regime not found."}, status=status.HTTP_400_BAD_REQUEST)
-	
+		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Tax regime not found."})
 	except Exception as e:
 		return Response({
 			"statuscode": status.HTTP_400_BAD_REQUEST,
@@ -189,7 +180,7 @@ def setup_tax_slabs(request):
 # 		}, status=status.HTTP_400_BAD_REQUEST)
 
 # 	# 4. Get employee's selected tax regime for current FY
-# 	regime_selection = emoloyee_tax_regimes.objects.get(
+# 	regime_selection = employee_tax_regimes.objects.get(
 # 		employee_id=employee_id,
 # 		financial_year=current_fy,
 # 		is_active=True
@@ -197,7 +188,7 @@ def setup_tax_slabs(request):
 # 	print("regime_selection",regime_selection)
 # 	try:
 # 		regime = regime_selection.tax_regime
-# 	except emoloyee_tax_regimes.DoesNotExist:
+# 	except employee_tax_regimes.DoesNotExist:
 # 		return Response({
 # 			"statuscode": status.HTTP_400_BAD_REQUEST,
 # 			"status": "error",
@@ -248,27 +239,8 @@ def setup_tax_slabs(request):
 
 def calculate_employee_tax_deduction(employee_id, ctc):
 	
-	# employee_id = request.data.get('employee_id')
-	# ctc = request.data.get('ctc')
-	print('employee_id from the tax cal==========>',employee_id)
-	print('ctc from the tax cal===========>',ctc)
-
-	# 1. Get employee record
-	# employee_id = request.data.get('employee_id')
-	print("inside the calculate function")
-	emp = check_employee_exists(employee_id)
-	print("emp====>",emp)
-
-	if ctc == 0:
-		return Response({
-			"statuscode": status.HTTP_400_BAD_REQUEST,
-			"status": "error",
-			"message": "ctc not found"
-		}, status=status.HTTP_400_BAD_REQUEST)
-	
 	ctc = Decimal(str(ctc))
-
-	# 3. Determine current financial year
+	# Determine current financial year
 	today = date.today()
 	current_year = today.year
 	fy_start = date(current_year, 4, 1)
@@ -283,8 +255,8 @@ def calculate_employee_tax_deduction(employee_id, ctc):
 			"message": "financial year not found"
 		}, status=status.HTTP_400_BAD_REQUEST)
 
-	# 4. Get employee's selected tax regime for current FY
-	regime_selection = emoloyee_tax_regimes.objects.get(
+	# Get employee's selected tax regime for current FY
+	regime_selection = employee_tax_regimes.objects.get(
 		employee_id=employee_id,
 		financial_year=current_fy,
 		is_active=True
@@ -292,14 +264,14 @@ def calculate_employee_tax_deduction(employee_id, ctc):
 	print("regime_selection",regime_selection)
 	try:
 		regime = regime_selection.tax_regime
-	except emoloyee_tax_regimes.DoesNotExist:
+	except employee_tax_regimes.DoesNotExist:
 		return Response({
 			"statuscode": status.HTTP_400_BAD_REQUEST,
 			"status": "error",
 			"message": "regime not found"
 		}, status=status.HTTP_400_BAD_REQUEST)
 	
-	# 5. Get tax slabs for this FY and regime
+	# Get tax slabs for this FY and regime
 	slabs = tax_slabs.objects.filter(
 		financial_year=current_fy,
 		tax_regime=regime,
@@ -313,7 +285,7 @@ def calculate_employee_tax_deduction(employee_id, ctc):
 			"message": "slab not found"
 		}, status=status.HTTP_400_BAD_REQUEST)
 
-	# 6. Apply slabs progressively
+	# Apply slabs progressively
 	total_tax = Decimal('0.00')
 
 	for slab in slabs:
@@ -326,9 +298,21 @@ def calculate_employee_tax_deduction(employee_id, ctc):
 			tax_for_slab = taxable_amount * slab_rate
 			total_tax += tax_for_slab
 
-	print("total_tax",total_tax)
-	annual_tax = Decimal(math.ceil(total_tax))
+	annual_tax = Decimal(math.ceil(total_tax))  
 	monthly_tax = annual_tax / Decimal('12.0')
-	print("monthly_tax",monthly_tax)
 
 	return float(monthly_tax)
+
+
+@api_view(('PATCH',))
+def update_employee_regime(request, pk):
+	try:
+		tax_regime = employee_tax_regimes.objects.get(employee_id=pk)
+	except employee_tax_regimes.DoesNotExist:
+		raise APIException(detail={"statuscode": 404, "status": "error", "message": "Employee tax regime not found"})
+	serializer = UpdateTaxregimeSerializer(tax_regime, data=request.data, partial=True)
+	if serializer.is_valid():
+		employee_tax_regimes.objects.filter(employee_id = pk).update(**serializer.validated_data)
+		return Response({"statuscode": status.HTTP_200_OK, "status": "success", "message": "Employee tax regime updated successfully"}, status=status.HTTP_200_OK)
+	else:
+		return Response({"statuscode": status.HTTP_400_BAD_REQUEST, "status": "error", "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
