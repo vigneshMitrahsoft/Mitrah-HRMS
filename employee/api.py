@@ -96,7 +96,7 @@ def create_employee(request):
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
 	try:
-		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
+		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
 
 		employee_role_objs = [
 			employee_roles(
@@ -143,7 +143,7 @@ def create_employee(request):
 		serializer = create_leavebalance_serializer(data=leave_balance_data)
 		if serializer.is_valid():
 			data = serializer.validated_data
-			employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+			employee_leave_balances.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 		else:
 			raise  ValueError(serializer.errors)
 
