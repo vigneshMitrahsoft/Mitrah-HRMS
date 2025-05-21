@@ -17,6 +17,7 @@ urlpatterns = [
 	path("salary/update/<int:id>",api.update_employee_salary_info),
 	path("salary",api.get_employees_salary),
 	path("salary/<int:id>",api.get_employee_salary),
+	path("roles",api.get_employee_roles)
 	# path("salary/calculate/<int:id>",api.calculate_employee_salary)
 	# path("employees",views.get),
 	# path("employee",views.insertEmployee),

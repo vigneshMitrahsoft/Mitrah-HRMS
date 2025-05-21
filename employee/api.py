@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes,  parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status
-from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer,create_salary_info_serializer
+from .serializers import employee,get_serializer,create_serializer,employee_serializer,update_serializer,create_salary_info_serializer,get_roles
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -311,4 +311,12 @@ def get_employee_salary(request,id):
 	except employee_salary_info.DoesNotExist:
 		return Response({"detail": "Employee salary not found"}, status=status.HTTP_404_NOT_FOUND)
 	serialized_data = create_salary_info_serializer(data)
+	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
+
+@api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr']) 
+def get_employee_roles(request):
+	data = roles.objects.all()
+	serialized_data = get_roles(data,many = True)
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
