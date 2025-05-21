@@ -67,33 +67,32 @@ def check_existing_permission(data,id = 0):
 	# end_time = datetime.strptime(data['end_time'], "%H:%M").time()
 	if check:
 		for check_value in check:
-			print("hiii-->",check_value.employee,check_value.start_time, check_value.end_time)
 			if check_value.start_time <= start_time <= check_value.end_time:
 				return True
 	else:
 		return False
 	return False
 
-@api_view(('POST',))
-@permission_classes((IsAuthenticated,))
-@IsAuthorized(['hr'])
-def create_employee_leave_balances(request):
-	token_user_id = request.user.employee_id
-	data  = {
-		'employee_id': request.data['employee_id'],
-		'sick_leave': 5,
-		'casual_leave': 1,
-		'permission_hours': 2,
-		'compensation_leave': 1,
-		'overtime_balance_hours': 1,
-	}
-	serializer = create_leavebalance_serializer(data=data)
-	if serializer.is_valid():
-		data = serializer.validated_data
-		create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-	else:
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(('POST',))
+# @permission_classes((IsAuthenticated,))
+# @IsAuthorized(['hr'])
+# def create_employee_leave_balances(request):
+# 	token_user_id = request.user.employee_id
+# 	data  = {
+# 		'employee_id': request.data['employee_id'],
+# 		'sick_leave': 5,
+# 		'casual_leave': 1,
+# 		'permission_hours': 2,
+# 		'compensation_leave': 1,
+# 		'overtime_balance_hours': 1,
+# 	}
+# 	serializer = create_leavebalance_serializer(data=data)
+# 	if serializer.is_valid():
+# 		data = serializer.validated_data
+# 		create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+# 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+# 	else:
+# 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
@@ -117,6 +116,24 @@ def get_employee_leave_balances(request,id):
 	serialized_data = get_leavebalance_serializer(data)
    
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
+
+@api_view(('PATCH',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
+@transaction.atomic
+def update_employee_leave_balance(request,id):
+	token_user_id = request.user.employee_id
+	try:
+		leave_balance_instance = employee_leave_balances.objects.get(leave_balance_id = id)
+	except employee_leave_balances.DoesNotExist:
+		return Response({"detail": "Employee leave balance not found"}, status=status.HTTP_404_NOT_FOUND)
+	serializer = create_leavebalance_serializer(leave_balance_instance, data=request.data, partial=True)
+	if serializer.is_valid():
+		serializer.updated_by = token_user_id
+		serializer.save() 
+		return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
+	
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
@@ -246,7 +263,7 @@ def update_employee_applied_leaves(request, id):
 						apply_data = serializer.validated_data
 						create_attendance_info = employees_attendance_info.objects.create(**apply_data, action_by = token_user_id)
 					else:
-						return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+						raise ValueError(serializer.errors)
 	except Exception as e:
 		transaction.set_rollback(True)
 		return Response({
@@ -339,9 +356,12 @@ def apply_employee_permission(request):
 @permission_classes((IsAuthenticated,))
 def update_employee_permission(request,id):
 	token_user_id = request.user.employee_id
+	emp_applied_permission = employee_applied_permissions.objects.get(permission_id = id)
+	emp_id = emp_applied_permission.employee.employee_id
 	data = request.data
+	data['employee'] = emp_id
 	if 'status' in data:
-		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = emp_id)
 		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
 		if data['status'] == 'Cancelled':
 			applied_permission_start_time = applied_permission.start_time
@@ -356,21 +376,24 @@ def update_employee_permission(request,id):
 			employee_permission_balance.save()
 
 	if ('start_time' in data) and ('end_time' in data):
-		print("hiiii--->",data['start_time'],data['end_time'])
 		if data['end_time'] < data['start_time']:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"End date msut be greater"}, status=status.HTTP_400_BAD_REQUEST)
 		check_exist_permission  = check_existing_permission(data,id)
 		if check_exist_permission:
 			return Response({"statuscode":status.HTTP_400_BAD_REQUEST,"status":"Failed","message":"The permission will be applied please update or change time"}, status=status.HTTP_400_BAD_REQUEST)
 		applied_permission = employee_applied_permissions.objects.get(permission_id = id)
-		employee_permission_balance = employee_leave_balances.objects.get(employee_id = data['employee'])
+		employee_permission_balance = employee_leave_balances.objects.get(employee_id = emp_id)
 		applied_hours = calculate_applied_hours(data['start_time'], data['end_time'])
 		applied_employee_start_time = applied_permission.start_time
 		applied_employee_end_time = applied_permission.end_time
 		applied_employee_start_time = applied_employee_start_time.strftime("%H:%M")
 		applied_employee_end_time = applied_employee_end_time.strftime("%H:%M")
 		previous_hours = calculate_applied_hours(applied_employee_start_time, applied_employee_end_time)
-		balance_duration = employee_permission_balance.permission_hours + previous_hours
+		if employee_permission_balance.permission_hours is None:
+			employee_permission_hours = 0
+		else:
+			employee_permission_hours = employee_permission_balance.permission_hours
+		balance_duration = employee_permission_hours + previous_hours
 		if applied_hours <= balance_duration:
 			serializer = create_applied_permission(applied_permission, data = data, partial = True)
 			if serializer.is_valid():

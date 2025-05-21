@@ -30,9 +30,9 @@ class company_Settings(models.Model):
     employee_PF = models.FloatField(blank=True, null=True, db_column = 'employee_pf')
     leave_compensation = models.FloatField(blank=True, null=True)
     basic_work_hours = models.FloatField(blank=True, null=True)
-    sick_leaves  = models.FloatField(blank=True, null=True)
-    casual_leaves = models.FloatField(blank=True, null=True)
-    permission_hours = models.FloatField(blank=True, null=True)
+    sick_leaves  = models.FloatField(default = 0)
+    casual_leaves = models.FloatField(default = 0)
+    permission_hours = models.FloatField(default = 0)
     pay_cycle_day = models.IntegerField(blank = True, null = True)
 
     class Meta:

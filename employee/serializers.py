@@ -30,7 +30,6 @@ class get_serializer(serializers.Serializer):
 	roles = serializers.SerializerMethodField()
 
 	def get_roles(self, obj):
-		print("obj-->",obj.employee_id)
 		roles = employee_roles.objects.filter(employee=obj.employee_id,is_active=True)
 		return roles.values_list('role__role_id', flat=True)
 			
