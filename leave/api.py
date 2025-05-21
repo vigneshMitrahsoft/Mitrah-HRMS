@@ -73,26 +73,26 @@ def check_existing_permission(data,id = 0):
 		return False
 	return False
 
-@api_view(('POST',))
-@permission_classes((IsAuthenticated,))
-@IsAuthorized(['hr'])
-def create_employee_leave_balances(request):
-	token_user_id = request.user.employee_id
-	data  = {
-		'employee_id': request.data['employee_id'],
-		'sick_leave': 5,
-		'casual_leave': 1,
-		'permission_hours': 2,
-		'compensation_leave': 1,
-		'overtime_balance_hours': 1,
-	}
-	serializer = create_leavebalance_serializer(data=data)
-	if serializer.is_valid():
-		data = serializer.validated_data
-		create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
-		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
-	else:
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(('POST',))
+# @permission_classes((IsAuthenticated,))
+# @IsAuthorized(['hr'])
+# def create_employee_leave_balances(request):
+# 	token_user_id = request.user.employee_id
+# 	data  = {
+# 		'employee_id': request.data['employee_id'],
+# 		'sick_leave': 5,
+# 		'casual_leave': 1,
+# 		'permission_hours': 2,
+# 		'compensation_leave': 1,
+# 		'overtime_balance_hours': 1,
+# 	}
+# 	serializer = create_leavebalance_serializer(data=data)
+# 	if serializer.is_valid():
+# 		data = serializer.validated_data
+# 		create_leave_balance = employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+# 		return Response({"statuscode":status.HTTP_201_CREATED,"status":"success","message":"created successfully"},status=status.HTTP_201_CREATED)
+# 	else:
+# 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	
 @api_view(('GET',))
 @permission_classes((IsAuthenticated,))
@@ -116,6 +116,24 @@ def get_employee_leave_balances(request,id):
 	serialized_data = get_leavebalance_serializer(data)
    
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
+
+@api_view(('PATCH',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
+@transaction.atomic
+def update_employee_leave_balance(request,id):
+	token_user_id = request.user.employee_id
+	try:
+		leave_balance_instance = employee_leave_balances.objects.get(leave_balance_id = id)
+	except employee_leave_balances.DoesNotExist:
+		return Response({"detail": "Employee leave balance not found"}, status=status.HTTP_404_NOT_FOUND)
+	serializer = create_leavebalance_serializer(leave_balance_instance, data=request.data, partial=True)
+	if serializer.is_valid():
+		serializer.updated_by = token_user_id
+		serializer.save() 
+		return Response({"statuscode":status.HTTP_200_OK,"status":"success","message":"updated successfully"},status=status.HTTP_200_OK)
+	
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('POST',))
 @permission_classes((IsAuthenticated,))
@@ -245,7 +263,7 @@ def update_employee_applied_leaves(request, id):
 						apply_data = serializer.validated_data
 						create_attendance_info = employees_attendance_info.objects.create(**apply_data, action_by = token_user_id)
 					else:
-						return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+						raise ValueError(serializer.errors)
 	except:
 		transaction.set_rollback(True)
 		return Response({
