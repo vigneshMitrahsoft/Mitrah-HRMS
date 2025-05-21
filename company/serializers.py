@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import company
+from .models import company, company_Settings
 import os
 
 class companySerializer(serializers.ModelSerializer):
@@ -74,3 +74,9 @@ class companyUpdateSerializer(serializers.Serializer):
 	basic_pay = serializers.FloatField()
 	other_allowances = serializers.FloatField()
 	permission_hours = serializers.FloatField()
+
+class company_settings_serializer(serializers.ModelSerializer):
+
+	class Meta:
+		model = company_Settings
+		fields = '__all__'

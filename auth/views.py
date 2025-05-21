@@ -31,13 +31,14 @@ def IsAuthorized(required_roles):
 				token = auth_header.split(" ")[1] 
 				decoded_token = token_backend.decode(token)
 				employee_id = decoded_token.get("employee_id")
+				print("employee_id-->",employee_id)
 
 				if not employee_id:
 					return Response({"detail": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
 
 				# roles = list(employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True))
 				roles = [role.lower() for role in employee_roles.objects.filter(employee_id=employee_id, is_active=True).values_list("role__role_name", flat=True)]
-				
+				print("roles---->",roles)
 				if not roles:  
 					return Response({"detail": "Employee has no assigned roles"}, status=status.HTTP_403_FORBIDDEN)
 

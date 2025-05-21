@@ -1,8 +1,10 @@
 from datetime import datetime
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes,permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
+from auth.views import IsAuthorized
 from .models import company, company_Settings
-from .serializers import companySerializer, companyCreateSerializer, companyUpdateSerializer
+from .serializers import companySerializer, companyCreateSerializer, companyUpdateSerializer, company_settings_serializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
@@ -16,14 +18,18 @@ def check_company_exists(pk):
 	return comp
 
 @api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+@IsAuthorized(['hr'])
 def company_list(request):
 	companies = company.objects.filter(is_active = True)
 	serializer = companySerializer(companies, many = True, context = {'request': request})
 	return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
 @api_view(('GET',))
-def specific_company(request, pk):
-	comp = company.objects.get(company_id = pk)
+@permission_classes((IsAuthenticated,))
+def specific_company(request):
+	token_company_id = request.user.company_id
+	comp = company.objects.get(company_id = token_company_id.company_id)
 	serializer = companySerializer(comp, context = {'request': request})
 	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
 
@@ -112,3 +118,15 @@ def company_delete(request,pk):
 	if comp:
 		company.objects.filter(company_id = pk).update(is_active = False)
 		return Response({"statuscode" : status.HTTP_200_OK, "status" : "success", "message" : "company deleted successfully"}, status = status.HTTP_204_NO_CONTENT)
+	
+
+@api_view(('GET',))
+@permission_classes((IsAuthenticated,))
+def specific_company_settings(request):
+	token_company_id = request.user.company_id
+	comp = company_Settings.objects.get(company = token_company_id.company_id)
+	serializer = company_settings_serializer(comp, context = {'request': request})
+	return Response ({"statuscode" : status.HTTP_200_OK, "status" : "success", "data" : serializer.data}, status = status.HTTP_200_OK)
+
+
+

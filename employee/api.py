@@ -94,7 +94,8 @@ def create_employee(request):
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
-	data.pop('profile_picture_path')
+	if 'profile_picture_path' in data:
+		data.pop('profile_picture_path')
 	try:
 		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 
