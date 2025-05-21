@@ -183,7 +183,6 @@ def get_employee_attendance(request, id):
 	]
 
 	raw_results = [dict(zip(column_names, row)) for row in result]
-
 	# Grouping by just 'date' (not session)
 	grouped_data = defaultdict(lambda: {
 		'permissions': [],
@@ -224,12 +223,19 @@ def get_employee_attendance(request, id):
 				'end_time': entry['permission_end_time']
 			})
 
-		# Append leave info per session
+		# # Append leave info per session
+		# if entry['session'] or entry['leave_type']:
+		# 	group['leaves'].append({
+		# 		'session': entry['session'],
+		# 		'leave_type': entry['leave_type']
+		# 	})
 		if entry['session'] or entry['leave_type']:
-			group['leaves'].append({
+			leave_entry = {
 				'session': entry['session'],
 				'leave_type': entry['leave_type']
-			})
+			}
+			if leave_entry not in group['leaves']:
+				group['leaves'].append(leave_entry)
 
 		# Assign top-level leave status/type from first non-empty one
 		if not group['leave_status'] and entry['leave_status']:

@@ -48,12 +48,10 @@ class create_employee_applied_leaves(serializers.Serializer):
 			error['date_error'] = "End date should be greater than start date"
 		session_dates = [session['leave_date'] for session in data['sessions']]
 		session_dates_set = set(session_dates)
-		print("session_sate---->",session_dates_set, type(session_dates_set))
 		total_days = (data['end_date'] - data['start_date']).days + 1
 		expected_dates_set = {
 			(data['start_date'] + timedelta(days=i)) for i in range(total_days)
 		}
-		print("exp session_sate---->",expected_dates_set, type(expected_dates_set))
 
 		# Compare expected vs. actual session dates
 		if session_dates_set != expected_dates_set:
@@ -79,7 +77,6 @@ class create_employee_applied_leaves(serializers.Serializer):
 				for leave in leave_data:
 					entry = leave.leave_days.all()
 					for entry in entry:
-						print('entry:', entry.session)
 						if entry.session == session_data['session']:
 							error['session_data_error'] = "You have already applied for this date"
 						else:
