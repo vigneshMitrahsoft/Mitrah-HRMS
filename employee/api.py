@@ -90,13 +90,14 @@ def create_employee(request):
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 	data = serializer.validated_data
+	image = data.get('profile_picture_path')
 	plain_password = data.get('password')
 	if plain_password:
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
-	# if 'profile_picture_path' in request.FILES:
-	# 	data.pop('profile_picture_path')
+	if 'profile_picture_path' in request.FILES:
+		data.pop('profile_picture_path')
 	try:
 		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
 
@@ -115,6 +116,7 @@ def create_employee(request):
 		next_year = current_year + 1
 		fy_start = date(current_year, 4, 1)
 		fy_end = date(next_year, 3, 31)
+
 
 		try:
 			current_fy = financial_year.objects.get(start_date=fy_start, end_date=fy_end, is_active=True)
@@ -149,7 +151,7 @@ def create_employee(request):
 		else:
 			raise  ValueError(serializer.errors)
 
-		image = data.get('profile_picture_path')
+		
 		if image:
 			create_employee.profile_picture_path = image
 			create_employee.save()
@@ -174,25 +176,25 @@ def update_employee(request, id):
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
 
-	data = request.data
 	token_user_id = request.user.employee_id
 
-	# Profile picture will be uploaded at last, once all transactions are done
-	# if 'profile_picture_path' in request.FILES:
-	# 	data.pop('profile_picture_path')
-
-	serializer = update_serializer(employee_data, data = data, partial = True)
+	serializer = update_serializer(employee_data, data = request.data, partial = True)
+	image = request.data.get('profile_picture_path')
 	if serializer.is_valid():
+		serializer.save(updated_by = token_user_id)
+		# print("serializer---->",serializer.data)
 		validated_data = serializer.validated_data
-
 		# if 'profile_picture_path' in request.FILES:
-		# 	data.pop('profile_picture_path')
+		# 	validated_data.pop('profile_picture_path')
 
 		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
 		if 'roles' in validated_data:
 			validated_data.pop('roles')
 
-		employee.objects.filter(employee_id = id).update(**validated_data, updated_by = token_user_id)
+		# for attr, value in validated_data.items():
+		# 	setattr(employee_data, attr, value)
+		# employee_data.updated_by = token_user_id
+		# employee_data.save()
 
 		current_roles = set(
 			employee_roles.objects.filter(employee_id = id, is_active = True).values_list('role_id', flat = True)
@@ -220,18 +222,18 @@ def update_employee(request, id):
 						created_by = token_user_id,
 						updated_by = token_user_id
 					)
-
-		image = data.get('profile_picture_path')
 		if image:
-			directory = os.path.join("assets", "profile_picture_path")
-			previous_file_name = employee_data.profile_picture_path
-			old_file = os.path.join(directory, f"{previous_file_name}")
-			if os.path.exists(old_file):
-				os.remove(old_file)
+			directory = os.path.join("assets", "profile_picture")
+			previous_file_name = employee_data.profile_picture_path if employee_data.profile_picture_path else None
+			if previous_file_name:
+				old_file = os.path.join(directory, f"{previous_file_name}")
+				if os.path.isfile(old_file):
+					os.remove(old_file)
 			employee_data.profile_picture_path = image
 			employee_data.save()
-			employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
+			employee_data.profile_picture_path = os.path.basename(employee_data.profile_picture_path.name)
 			employee_data.save(update_fields=['profile_picture_path'])
+
 
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
