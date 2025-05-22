@@ -4,6 +4,9 @@ import os
 
 class companySerializer(serializers.ModelSerializer):
 
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+
 	class Meta:
 		model = company
 		fields = '__all__'

@@ -77,7 +77,7 @@ class create_serializer(serializers.Serializer):
 	roles = serializers.ListField(child = serializers.PrimaryKeyRelatedField(queryset = roles.objects.all()), required = True)
 	date_of_joining = serializers.DateField(required = True)
 	type_id = serializers.PrimaryKeyRelatedField(queryset = employee_type.objects.all(), required=True)
-
+	
 	def validate(self,data):
 		data['email'] = data['email'].lower()
 		user_exists = employee.objects.filter(email=data['email']).exists()
@@ -140,6 +140,9 @@ class update_serializer(serializers.Serializer):
 		return value
 
 class create_salary_info_serializer(serializers.ModelSerializer):
+
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
 	class Meta:
 		model = employee_salary_info
 		fields = "__all__"

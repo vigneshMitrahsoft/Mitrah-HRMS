@@ -1,15 +1,43 @@
 from rest_framework import serializers
 from .models import LoanDeduction, Repayment
-from datetime import datetime
+from datetime import datetime, date
 
 
 class loanSerializer(serializers.ModelSerializer):
+	
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	requested_date = serializers.SerializerMethodField()
+	start_date = serializers.SerializerMethodField()
+	end_date = serializers.SerializerMethodField()
+	approved_date = serializers.SerializerMethodField()
+
+	def get_approved_date(self, obj):
+		return obj.approved_date.date().strftime("%Y-%m-%d") if obj.approved_date else None
+	
+	def get_requested_date(self, obj):
+		return obj.requested_date.date().strftime("%Y-%m-%d") if obj.requested_date else None
+
+	def get_start_date(self, obj):
+		return obj.start_date.date().strftime("%Y-%m-%d") if obj.start_date else None
+
+	def get_end_date(self, obj):
+		return obj.end_date.date().strftime("%Y-%m-%d") if obj.end_date else None
+
 	class Meta:
 		model = LoanDeduction
 		fields = '__all__'
 
 
 class repaymentSerializer(serializers.ModelSerializer):
+
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	payment_date = serializers.SerializerMethodField()
+
+	def get_payment_date(self, obj):
+		return obj.payment_date.date().strftime("%Y-%m-%d") if obj.payment_date else None
+
 	class Meta:
 		model = Repayment   
 		fields = '__all__'
