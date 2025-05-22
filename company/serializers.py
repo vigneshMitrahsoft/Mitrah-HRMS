@@ -27,7 +27,7 @@ class companySerializer(serializers.ModelSerializer):
 class companyCreateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
 	address =serializers.CharField()
-	company_logo = serializers.ImageField(required = False, allow_null = True)
+	company_logo_path = serializers.FileField(required = False, allow_null = True)
 	hra = serializers.FloatField()
 	employer_ESI = serializers.FloatField()
 	employee_ESI = serializers.FloatField()
@@ -61,6 +61,12 @@ class companyCreateSerializer(serializers.Serializer):
 			raise serializers.ValidationError(errors)
 
 		return data
+	
+	def validate_company_logo_path(self, value):
+		ext = os.path.splitext(value.name)[1].lower()
+		if ext not in ['.jpg', '.jpeg', '.png']:
+			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
+		return value
 
 class companyUpdateSerializer(serializers.Serializer):
 	company_name = serializers.CharField()
@@ -77,3 +83,10 @@ class companyUpdateSerializer(serializers.Serializer):
 	basic_pay = serializers.FloatField()
 	other_allowances = serializers.FloatField()
 	permission_hours = serializers.FloatField()
+	company_logo_path = serializers.FileField(required = False, allow_null = True)
+
+	def validate_company_logo_path(self, value):
+		ext = os.path.splitext(value.name)[1].lower()
+		if ext not in ['.jpg', '.jpeg', '.png']:
+			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
+		return value

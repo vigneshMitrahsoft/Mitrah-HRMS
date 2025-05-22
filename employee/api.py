@@ -95,6 +95,8 @@ def create_employee(request):
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
+	# if 'profile_picture_path' in request.FILES:
+	# 	data.pop('profile_picture_path')
 	try:
 		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
 
@@ -147,8 +149,8 @@ def create_employee(request):
 		else:
 			raise  ValueError(serializer.errors)
 
-		if 'profile_picture' in request.FILES:
-			image = request.FILES['profile_picture']
+		image = data.get('profile_picture_path')
+		if image:
 			create_employee.profile_picture_path = image
 			create_employee.save()
 			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
@@ -176,12 +178,15 @@ def update_employee(request, id):
 	token_user_id = request.user.employee_id
 
 	# Profile picture will be uploaded at last, once all transactions are done
-	if 'profile_picture_path' in request.FILES:
-		data.pop('profile_picture_path')
+	# if 'profile_picture_path' in request.FILES:
+	# 	data.pop('profile_picture_path')
 
 	serializer = update_serializer(employee_data, data = data, partial = True)
 	if serializer.is_valid():
 		validated_data = serializer.validated_data
+
+		# if 'profile_picture_path' in request.FILES:
+		# 	data.pop('profile_picture_path')
 
 		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
 		if 'roles' in validated_data:
@@ -216,8 +221,8 @@ def update_employee(request, id):
 						updated_by = token_user_id
 					)
 
-		if 'profile_picture_path' in request.FILES:
-			image = request.FILES['profile_picture_path']
+		image = data.get('profile_picture_path')
+		if image:
 			directory = os.path.join("assets", "profile_picture_path")
 			previous_file_name = employee_data.profile_picture_path
 			old_file = os.path.join(directory, f"{previous_file_name}")
@@ -232,7 +237,6 @@ def update_employee(request, id):
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
 			status=status.HTTP_200_OK,
 		)
-
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('DELETE',))

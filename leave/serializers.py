@@ -6,9 +6,6 @@ from django.db.models import Prefetch
 
 
 class create_leavebalance_serializer(serializers.ModelSerializer):
-
-	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p", read_only=True)
-	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p", read_only=True)
 	class Meta:
 		model = employee_leave_balances
 		fields = "__all__"

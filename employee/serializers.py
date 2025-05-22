@@ -1,5 +1,7 @@
 from .models import company,employee,employee_type,employee_roles,roles,employee_salary_info, upload_path
 from rest_framework import  serializers
+import os
+import imghdr
 
 class company_serializer(serializers.ModelSerializer):
 	class Meta:
@@ -72,7 +74,7 @@ class create_serializer(serializers.Serializer):
 	phone = serializers.CharField(required = True)
 	aadhar_number = serializers.CharField(required = False, allow_blank = True)
 	pan_number = serializers.CharField(required = False, allow_blank = True)
-	profile_picture_path = serializers.ImageField(required = False)
+	profile_picture_path = serializers.FileField(required = False)
 	address = serializers.CharField(required = False, allow_blank = True)
 	roles = serializers.ListField(child = serializers.PrimaryKeyRelatedField(queryset = roles.objects.all()), required = True)
 	date_of_joining = serializers.DateField(required = True)
@@ -95,6 +97,15 @@ class create_serializer(serializers.Serializer):
 		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
 		return value
+	
+	def validate_profile_picture_path(self, value):
+		ext = os.path.splitext(value.name)[1].lower()
+		ext1 = value.name.split('.')
+		print("sfnsdkjfskjfbs-->",ext1)
+		if ext not in ['.jpg', '.jpeg', '.png']:
+			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
+		return value
+
 
 class update_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
@@ -107,7 +118,7 @@ class update_serializer(serializers.Serializer):
 	phone = serializers.CharField(required = True)
 	aadhar_number = serializers.CharField(required = False, allow_blank = True)
 	pan_number = serializers.CharField(required = False, allow_blank = True)
-	profile_picture_path = serializers.ImageField( required = False)
+	profile_picture_path = serializers.FileField(required = False)
 	address = serializers.CharField(required = False, allow_blank = True)
 	date_of_joining = serializers.DateField(required = False)
 	type_id = serializers.PrimaryKeyRelatedField(queryset = employee_type.objects.all(), required = True)
@@ -137,6 +148,12 @@ class update_serializer(serializers.Serializer):
 		roles_set = {role for role in value}
 		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
+		return value
+	
+	def validate_profile_picture_path(self, value):
+		ext = os.path.splitext(value.name)[1].lower()
+		if ext not in ['.jpg', '.jpeg', '.png']:
+			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
 		return value
 
 class create_salary_info_serializer(serializers.ModelSerializer):
