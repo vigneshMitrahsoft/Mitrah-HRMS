@@ -11,8 +11,9 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from loan.models import LoanDeduction #, permission_classes
 from payslips.models import Payslip
-from payslips.serializer import PayslipSerializer, PayslipStatusUpdateSerializer
+from payslips.serializer import PayslipStatusUpdateSerializer
 from taxdeduction.api import calculate_employee_tax_deduction
+from rest_framework.exceptions import APIException
 # @api_view(['GET'])
 # def generate_payslip(request, id):
 # 	employee_instance = employee.objects.get(employee_id=id)
@@ -334,18 +335,22 @@ def generate_all_payslips(request):
 			employee_company = company_Settings.objects.get(company=emp.company_id.company_id)
 			employee_salary = employee_salary_info.objects.get(employee_id=emp)
 			# CTC and earnings
-			ctc = employee_salary.gross_salary + employee_salary.variable_pay
-			basic_pay = ctc * (employee_company.basic_pay / 100)
+			annual_ctc = employee_salary.gross_salary + employee_salary.variable_pay
+			if annual_ctc == 0:
+				raise APIException(detail={"statuscode": 404, "status": "error", "message": "CTC not found."})
+			monthly_ctc = annual_ctc / 12
+			monthly_gross_salary = employee_salary.gross_salary / 12
+			basic_pay = monthly_ctc * (employee_company.basic_pay / 100)
 			hra = basic_pay * (employee_company.HRA / 100)
 			other_allowance = basic_pay * (employee_company.other_allowances / 100)
 			total_earnings = basic_pay + hra + other_allowance
-			travel_allowance = max(ctc - total_earnings, 0)
+			travel_allowance = max(monthly_ctc - total_earnings, 0)
 			total_earnings += travel_allowance
 			# Deductions
 			employee_pf_deduction = (employee_company.employee_PF / 100) * basic_pay
-			employee_esi_deduction = (employee_company.employee_ESI / 100) * employee_salary.gross_salary
+			employee_esi_deduction = (employee_company.employee_ESI / 100) * monthly_gross_salary
 			employer_pf = (employee_company.employer_PF / 100) * basic_pay
-			employer_esi = (employee_company.employer_ESI / 100) * employee_salary.gross_salary
+			employer_esi = (employee_company.employer_ESI / 100) * monthly_gross_salary
 			# Pay cycle date
 			company_audit_day = employee_company.pay_cycle_day
 			given_date = datetime.strptime(f"{company_audit_day}-{today.month}-{today.year}", "%d-%m-%Y").date()
@@ -362,7 +367,7 @@ def generate_all_payslips(request):
 			leave_days = employees_attendance_info.objects.filter(
 				employee_id=emp.employee_id, date__range=[start_date, end_date], status='Absent'
 			).count()
-			lop_amount = (employee_salary.gross_salary / working_days) * leave_days if working_days > 0 else 0
+			lop_amount = (monthly_gross_salary / working_days) * leave_days if working_days > 0 else 0
 			# Loan
 			loan_emi = 0
 			loan = LoanDeduction.objects.filter(employee_id=emp.employee_id, is_deleted=False, status='Accepted').first()
@@ -370,10 +375,15 @@ def generate_all_payslips(request):
 				if loan.fixed_amount:
 					loan_emi = loan.fixed_amount
 				elif loan.percentage_amount:
-					loan_emi = (loan.percentage_amount / 100) * employee_salary.gross_salary
+					loan_emi = (loan.percentage_amount / 100) * monthly_gross_salary
+				elif loan.tenure:
+					try:
+						loan_emi = loan.loan_amount / loan.tenure
+					except ZeroDivisionError:
+						loan_emi = 0
 			# Tax deduction
 			monthly_tax_deduction = 0
-			monthly_tax_deduction = calculate_employee_tax_deduction(emp.employee_id, ctc)
+			monthly_tax_deduction = calculate_employee_tax_deduction(emp.employee_id, annual_ctc)
 			print(monthly_tax_deduction, "monthly_tax_deduction")
 			# Final amounts
 			total_deductions = employee_pf_deduction + employee_esi_deduction + lop_amount + loan_emi + monthly_tax_deduction
@@ -413,7 +423,7 @@ def generate_all_payslips(request):
 				"net_pay": round(net_pay, 2)
 			})
 		except Exception as e:
-			print(f"Error for {emp.employee_id}: {e}")
+			raise APIException(detail={"statuscode": 500, "status": "error", "message": f"Error for {emp.employee_id}: {str(e)}"})
 	# Perform bulk insert
 	if payslip_objects:
 		Payslip.objects.bulk_create(payslip_objects)

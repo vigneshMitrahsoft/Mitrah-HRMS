@@ -11,6 +11,8 @@ class financial_year(models.Model):
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
+	created_by = models.IntegerField(blank=True, null=True)
+	updated_by = models.IntegerField(blank=True, null=True)
 
 	class Meta:
 		db_table = 'financial_year'
@@ -21,6 +23,8 @@ class tax_regimes(models.Model):
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
+	created_by = models.IntegerField(blank=True, null=True)
+	updated_by = models.IntegerField(blank=True, null=True)
 
 	class Meta:
 		db_table = 'tax_regimes'
@@ -36,12 +40,14 @@ class tax_slabs(models.Model):
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
+	created_by = models.IntegerField(blank=True, null=True)
+	updated_by = models.IntegerField(blank=True, null=True)
 
 	class Meta:
 		db_table = 'tax_slabs'
 
 
-class emoloyee_tax_regimes(models.Model):
+class employee_tax_regimes(models.Model):
 	employee_tax_regime_id = models.BigAutoField(primary_key=True)
 	employee_id = models.ForeignKey(employee, on_delete=models.CASCADE, db_column='employee_id')
 	financial_year = models.ForeignKey(financial_year, on_delete=models.CASCADE, db_column='financial_year_id')
@@ -49,6 +55,8 @@ class emoloyee_tax_regimes(models.Model):
 	is_active = models.BooleanField(default=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	updated_at = models.DateTimeField(auto_now=True)
+	created_by = models.IntegerField(blank=True, null=True)
+	updated_by = models.IntegerField(blank=True, null=True)
 
 	class Meta:
 		db_table = 'employee_tax_regimes'

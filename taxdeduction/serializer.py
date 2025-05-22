@@ -21,4 +21,8 @@ class TaxSlabSerializer(serializers.ModelSerializer):
         fields = ['tax_slab_id', 'financial_year', 'tax_regime', 'slab_from', 'slab_to', 'slab_rate', 'is_active']
 
 
+class UpdateTaxregimeSerializer(serializers.Serializer):
+	tax_regime_id = serializers.IntegerField()
+	
+
 
