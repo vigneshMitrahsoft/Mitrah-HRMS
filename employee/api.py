@@ -197,25 +197,25 @@ def update_employee(request, id):
 
 		roles_to_deactivate = current_roles - updated_roles
 		roles_to_activate_or_create = updated_roles - current_roles
+		if 'roles' in data and current_roles != updated_roles:
+			if roles_to_deactivate:
+				employee_roles.objects.filter(employee_id = id, role_id__in = roles_to_deactivate).update(is_active = False)
 
-		if roles_to_deactivate:
-			employee_roles.objects.filter(employee_id = id, role_id__in = roles_to_deactivate).update(is_active = False)
-
-		for role_id in roles_to_activate_or_create:
-			try:
-				emp_role = employee_roles.objects.get(employee_id = id, role_id = role_id)
-				emp_role.is_active = True
-				emp_role.updated_by = token_user_id
-				emp_role.save()
-			except employee_roles.DoesNotExist:
-				if roles.objects.filter(role_id=role_id).exists():
-					employee_roles.objects.create(
-						employee_id = employee_data.employee_id,
-						role_id = role_id,
-						is_active = True,
-						created_by = token_user_id,
-						updated_by = token_user_id
-					)
+			for role_id in roles_to_activate_or_create:
+				try:
+					emp_role = employee_roles.objects.get(employee_id = id, role_id = role_id)
+					emp_role.is_active = True
+					emp_role.updated_by = token_user_id
+					emp_role.save()
+				except employee_roles.DoesNotExist:
+					if roles.objects.filter(role_id=role_id).exists():
+						employee_roles.objects.create(
+							employee_id = employee_data.employee_id,
+							role_id = role_id,
+							is_active = True,
+							created_by = token_user_id,
+							updated_by = token_user_id
+						)
 
 		if 'profile_picture_path' in request.FILES:
 			image = request.FILES['profile_picture_path']
