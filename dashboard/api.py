@@ -232,26 +232,22 @@ def dashboard(request):
 				"leave_application_chart_data": leave_application_chart_data
 			},
 			"employees_data": {
-				"employee_count": employee_count,
-				"count_of_employees":{
-					"active_employee_count": active_employee_count,
-					"inactive_employee_count": inactive_employee_count
-				},
+				"total_count": employee_count,
+				"active_count": active_employee_count,
+				"inactive_count": inactive_employee_count,
 				"analytic_data_of_employees": joining_leaving_trend
 			},
 			"leave_data": {
 				"employee_applied_leave_count": employee_applied_leave_count
 			},
 			"loan_data": {
-				"loan_count": loan_count,
-				"count_of_loans":{
-					"pending_loan_count": pending_loan_count,
-					"approved_loan_count": approved_loan_count,		
-				},
+				"total_count": loan_count,
+				"pending_count": pending_loan_count,
+				"approved_count": approved_loan_count,		
 				"analytic_data_of_loans": loan_monthly_data,
 				"total_loan_amount": total_loan_amount,   
 				"total_repaid_amount": total_repaid_amount,
-				"due_amount_to_company": due_amount_to_company
+				"outstanding_amount": due_amount_to_company
 			},
 			"overtime_data": {
 				"overtime_count": overtime_count
