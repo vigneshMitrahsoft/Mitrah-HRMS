@@ -10,6 +10,9 @@ class create_leavebalance_serializer(serializers.ModelSerializer):
 		model = employee_leave_balances
 		fields = "__all__"
 class get_leavebalance_serializer(serializers.ModelSerializer):
+
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
 	
 	class Meta:
 		model = employee_leave_balances
@@ -125,6 +128,8 @@ class create_employee_applied_leaves(serializers.Serializer):
 		return instance
 		
 class get_employee_apllied_leaves(serializers.ModelSerializer):
+
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
 
 	class Meta:
 		model = employee_applied_leaves

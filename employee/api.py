@@ -3,7 +3,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from leave.models import employee_leave_balances
 from .models import employee,employee_roles,roles,employee_salary_info
-from taxdeduction.models import financial_year,tax_regimes,emoloyee_tax_regimes
+from taxdeduction.models import financial_year,tax_regimes,employee_tax_regimes
 from attendance.models import employees_attendance_info
 from company.models import company_Settings,company
 from holiday.models import holiday
@@ -89,6 +89,7 @@ def create_employee(request):
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 	data = serializer.validated_data
+	image = data.get('profile_picture_path')
 	plain_password = data.get('password')
 	if plain_password:
 		hashed_password = make_password(plain_password)   
@@ -97,7 +98,7 @@ def create_employee(request):
 	if 'profile_picture_path' in data:
 		data.pop('profile_picture_path')
 	try:
-		create_employee = employee.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
+		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
 
 		employee_role_objs = [
 			employee_roles(
@@ -115,6 +116,7 @@ def create_employee(request):
 		fy_start = date(current_year, 4, 1)
 		fy_end = date(next_year, 3, 31)
 
+
 		try:
 			current_fy = financial_year.objects.get(start_date=fy_start, end_date=fy_end, is_active=True)
 		except financial_year.DoesNotExist:
@@ -125,7 +127,7 @@ def create_employee(request):
 		except tax_regimes.DoesNotExist:
 			raise ValueError("New Regime not found")
 
-		emoloyee_tax_regimes.objects.create(
+		employee_tax_regimes.objects.create(
 			employee_id=create_employee,
 			tax_regime=new_regime,
 			financial_year=current_fy,
@@ -144,12 +146,12 @@ def create_employee(request):
 		serializer = create_leavebalance_serializer(data=leave_balance_data)
 		if serializer.is_valid():
 			data = serializer.validated_data
-			employee_leave_balances.objects.create(**data , created_by = token_user_id, updated_by = token_user_id)
+			employee_leave_balances.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
 		else:
 			raise  ValueError(serializer.errors)
 
-		if 'profile_picture_path' in request.FILES:
-			image = request.FILES['profile_picture_path']
+		
+		if image:
 			create_employee.profile_picture_path = image
 			create_employee.save()
 			create_employee.profile_picture_path.name = os.path.basename(create_employee.profile_picture_path.name)
@@ -168,27 +170,31 @@ def create_employee(request):
 @IsAuthorized(['hr'])
 @parser_classes([MultiPartParser, FormParser])
 def update_employee(request, id):
+	data = request.data
 	try:
 		employee_data = employee.objects.get(employee_id = id)
 	except employee.DoesNotExist:
 		return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
 
-	data = request.data
 	token_user_id = request.user.employee_id
 
-	# Profile picture will be uploaded at last, once all transactions are done
-	if 'profile_picture_path' in request.FILES:
-		data.pop('profile_picture_path')
-
-	serializer = update_serializer(employee_data, data = data, partial = True)
+	serializer = update_serializer(employee_data, data = request.data, partial = True)
+	image = request.data.get('profile_picture_path')
 	if serializer.is_valid():
+		serializer.save(updated_by = token_user_id)
+		# print("serializer---->",serializer.data)
 		validated_data = serializer.validated_data
+		# if 'profile_picture_path' in request.FILES:
+		# 	validated_data.pop('profile_picture_path')
 
 		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
 		if 'roles' in validated_data:
 			validated_data.pop('roles')
 
-		employee.objects.filter(employee_id = id).update(**validated_data, updated_by = token_user_id)
+		# for attr, value in validated_data.items():
+		# 	setattr(employee_data, attr, value)
+		# employee_data.updated_by = token_user_id
+		# employee_data.save()
 
 		current_roles = set(
 			employee_roles.objects.filter(employee_id = id, is_active = True).values_list('role_id', flat = True)
@@ -227,14 +233,14 @@ def update_employee(request, id):
 					os.remove(old_file)
 			employee_data.profile_picture_path = image
 			employee_data.save()
-			employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
+			employee_data.profile_picture_path = os.path.basename(employee_data.profile_picture_path.name)
 			employee_data.save(update_fields=['profile_picture_path'])
+
 
 		return Response(
 			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
 			status=status.HTTP_200_OK,
 		)
-
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('DELETE',))

@@ -176,7 +176,7 @@ def create_repayment_records(pk):
         payment = emi_amount if remaining_balance >= emi_amount else remaining_balance
 
         # Determine EMI status
-        if due_date.day == current_date.day and due_date.month == current_date.month and due_date.year == current_date.year:
+        if due_date.month == current_date.month and due_date.year == current_date.year: #due_date.day == current_date.day
             status = "Paid"
             actual_repayments.append(
                 Repayment(

@@ -27,6 +27,9 @@ def calculated_requested_hours(obj):
 
 class overtimeSerializer(serializers.ModelSerializer):
 	requested_hours = serializers.SerializerMethodField()
+	created_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+	updated_at = serializers.DateTimeField(format="%Y-%m-%d %-I:%M %p")
+
 	class Meta:
 		model = Overtime
 		fields = '__all__'	

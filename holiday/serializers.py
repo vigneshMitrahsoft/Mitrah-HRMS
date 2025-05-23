@@ -30,7 +30,7 @@ class holiday_update_serializer(serializers.Serializer):
 class excel_serializer(serializers.Serializer):
 	excel_file = serializers.FileField()
 
-	def validate_file(self, value):
+	def validate_excel_file(self, value):
 		if not value.name.endswith(('.xlsx', '.xls')):
 			raise serializers.ValidationError("Only Excel files are allowed.")
 		return value
