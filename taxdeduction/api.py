@@ -12,7 +12,7 @@ from decimal import Decimal
 
 @api_view(('POST',))
 def setup_financial_year_and_regimes(request):
-		print("inside the setup function")
+		# print("inside the setup function")
 		today = date.today()
 		current_year = today.year
 		next_year = current_year + 1
@@ -51,7 +51,6 @@ def setup_financial_year_and_regimes(request):
 			print("New regime created:", new_regime)
 		else:
 			print("New regime already exists:", new_regime)
-
 		return Response({"statuscode" : status.HTTP_201_CREATED, "status" : "success", "message" : "Financial year and regimes setup successfully"}, status = status.HTTP_201_CREATED)
 
 
