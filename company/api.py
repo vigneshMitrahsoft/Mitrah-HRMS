@@ -38,8 +38,8 @@ def company_create(request):
 		data = serializer.validated_data
 		try:
 			comp = company.objects.create(company_name = data['company_name'], address = data['address'],created_at = datetime.now())
-			if 'company_logo_path' in request.FILES:
-				image = request.FILES['company_logo_path']
+			image = data.get('company_logo_path')
+			if image:
 				comp.company_logo_path = image
 				comp.save()
 				comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
@@ -75,43 +75,43 @@ def company_update(request,pk):
 	comp = check_company_exists(pk)
 	serializer = companyUpdateSerializer(comp, data = request.data, partial = True)
 	if serializer.is_valid():
-		datas = serializer.validated_data
+		data = serializer.validated_data
 		comp = company.objects.get(company_id=pk)
-		comp.company_name = datas.get('company_name', comp.company_name)
-		comp.address = datas.get('address', comp.address)
+		comp.company_name = data.get('company_name', comp.company_name)
+		comp.address = data.get('address', comp.address)
 		comp.updated_at = datetime.now()
 		
-		if 'company_logo_path' in request.FILES:
-			new_image = request.FILES['company_logo_path']
+		image = data.get('company_logo_path')
+		if image:
 			directory = os.path.join("assets", "company_logo")
 			previous_file_name = comp.company_logo_path if comp.company_logo_path else None
 			if previous_file_name:
 				old_file = os.path.join(directory, f"{previous_file_name}")
 				if os.path.isfile(old_file):
 					os.remove(old_file)
-			comp.company_logo_path = new_image
+			comp.company_logo_path = image
 			comp.save()
 			comp.company_logo_path.name = os.path.basename(comp.company_logo_path.name)
 			comp.save(update_fields=['company_logo_path'])
-	comp.save()
-
-	company_Settings.objects.filter(company_id=pk).update(
-		HRA=datas['hra'],
-		employer_ESI=datas['employer_ESI'],
-		employee_ESI=datas['employee_ESI'],
-		employer_PF=datas['employer_PF'],
-		employee_PF=datas['employee_PF'],
-		leave_compensation=datas['leave_compensation'],
-		basic_work_hours=datas['basic_work_hours'],
-		sick_leaves=datas['sick_leaves'],
-		casual_leaves=datas['casual_leaves'],
-	)
-	return Response({
-		"statuscode": status.HTTP_200_OK,
-		"status": "success",
-		"message": "company updated successfully"
-	}, status=status.HTTP_200_OK)
-		 
+			
+			company_Settings.objects.filter(company_id=pk).update(
+				HRA=data['hra'],
+				employer_ESI=data['employer_ESI'],
+				employee_ESI=data['employee_ESI'],
+				employer_PF=data['employer_PF'],
+				employee_PF=data['employee_PF'],
+				leave_compensation=data['leave_compensation'],
+				basic_work_hours=data['basic_work_hours'],
+				sick_leaves=data['sick_leaves'],
+				casual_leaves=data['casual_leaves'],
+			)
+			return Response({
+			"statuscode": status.HTTP_200_OK,
+			"status": "success",
+			"message": "company updated successfully"
+		}, status=status.HTTP_200_OK)
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+				
 @api_view(('DELETE',))
 def company_delete(request,pk):
 	comp = check_company_exists(pk)
