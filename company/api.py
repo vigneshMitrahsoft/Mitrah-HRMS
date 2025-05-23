@@ -87,7 +87,7 @@ def company_update(request,pk):
 			previous_file_name = comp.company_logo_path if comp.company_logo_path else None
 			if previous_file_name:
 				old_file = os.path.join(directory, f"{previous_file_name}")
-				if os.path.isfile(old_file):
+				if os.path.exists(old_file):
 					os.remove(old_file)
 			comp.company_logo_path = image
 			comp.save()

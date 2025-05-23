@@ -21,6 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.state import token_backend
 from leave.serializers import create_leavebalance_serializer
+from django.core.files.base import ContentFile
 from datetime import date, datetime,timedelta
 from dateutil.relativedelta import relativedelta
 from auth.views import IsAuthorized
@@ -179,22 +180,15 @@ def update_employee(request, id):
 	token_user_id = request.user.employee_id
 
 	serializer = update_serializer(employee_data, data = request.data, partial = True)
-	image = request.data.get('profile_picture_path')
 	if serializer.is_valid():
-		serializer.save(updated_by = token_user_id)
-		# print("serializer---->",serializer.data)
 		validated_data = serializer.validated_data
-		# if 'profile_picture_path' in request.FILES:
-		# 	validated_data.pop('profile_picture_path')
+		if 'profile_picture_path' in request.FILES:
+			validated_data.pop('profile_picture_path')
+		serializer.save(updated_by = token_user_id)
 
 		validated_role_ids = [role.role_id for role in validated_data.get('roles', [])]
 		if 'roles' in validated_data:
 			validated_data.pop('roles')
-
-		# for attr, value in validated_data.items():
-		# 	setattr(employee_data, attr, value)
-		# employee_data.updated_by = token_user_id
-		# employee_data.save()
 
 		current_roles = set(
 			employee_roles.objects.filter(employee_id = id, is_active = True).values_list('role_id', flat = True)
@@ -221,24 +215,26 @@ def update_employee(request, id):
 						is_active = True,
 						created_by = token_user_id,
 						updated_by = token_user_id
-					)
+			)
+		
+		image = request.FILES.get('profile_picture_path')
 		if image:
-			directory = os.path.join("assets", "profile_picture")
-			previous_file_name = employee_data.profile_picture_path if employee_data.profile_picture_path else None
-			if previous_file_name:
-				old_file = os.path.join(directory, f"{previous_file_name}")
-				if os.path.isfile(old_file):
-					os.remove(old_file)
-			employee_data.profile_picture_path = image
-			employee_data.save()
-			employee_data.profile_picture_path = os.path.basename(employee_data.profile_picture_path.name)
-			employee_data.save(update_fields=['profile_picture_path'])
+			ext = image.name.split('.')[-1]
+			file_name = f"{employee_data.employee_id}_profile.{ext}"			
 
+			old_filename = employee_data.profile_picture_path.name  
+			old_file_path = os.path.join(settings.MEDIA_ROOT, "profile_picture", old_filename)
+			
+			if old_file_path and os.path.exists(old_file_path):
+				os.remove(old_file_path)			
 
-		return Response(
-			{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
-			status=status.HTTP_200_OK,
-		)
+			employee_data.profile_picture_path.save(file_name, ContentFile(image.read()), save=False)
+			employee_data.profile_picture_path.name = os.path.basename(employee_data.profile_picture_path.name)
+			employee_data.save(update_fields=["profile_picture_path"])
+			return Response(
+				{"statuscode": status.HTTP_200_OK, "status": "success", "message": "Updated successfully"},
+				status=status.HTTP_200_OK,
+			)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('DELETE',))
