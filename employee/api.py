@@ -222,10 +222,10 @@ def update_employee(request, id):
 			ext = image.name.split('.')[-1]
 			file_name = f"{employee_data.employee_id}_profile.{ext}"			
 
-			old_filename = employee_data.profile_picture_path.name  
+			old_filename = employee_data.profile_picture_path.name
 			old_file_path = os.path.join(settings.MEDIA_ROOT, "profile_picture", old_filename)
 			
-			if old_file_path and os.path.exists(old_file_path):
+			if old_file_path and os.path.isfile(old_file_path):
 				os.remove(old_file_path)			
 
 			employee_data.profile_picture_path.save(file_name, ContentFile(image.read()), save=False)

@@ -62,6 +62,12 @@ class get_serializer(serializers.Serializer):
 		data = {key: "" if value is None else value for key, value in data.items()}
 
 		return data
+	
+def validate_image_extension(value):
+	ext = os.path.splitext(value.name)[1].lower()
+	if ext not in ['.jpg', '.jpeg', '.png']:
+		raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
+	return value
 
 class create_serializer(serializers.Serializer):
 	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
@@ -74,7 +80,7 @@ class create_serializer(serializers.Serializer):
 	phone = serializers.CharField(required = True)
 	aadhar_number = serializers.CharField(required = False, allow_blank = True)
 	pan_number = serializers.CharField(required = False, allow_blank = True)
-	profile_picture_path = serializers.FileField(required = False)
+	profile_picture_path = serializers.FileField(validators = [validate_image_extension], required = False)
 	address = serializers.CharField(required = False, allow_blank = True)
 	roles = serializers.ListField(child = serializers.PrimaryKeyRelatedField(queryset = roles.objects.all()), required = True)
 	date_of_joining = serializers.DateField(required = True)
@@ -97,15 +103,6 @@ class create_serializer(serializers.Serializer):
 		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
 		return value
-	
-	def validate_profile_picture_path(self, value):
-		ext = os.path.splitext(value.name)[1].lower()
-		ext1 = value.name.split('.')
-		print("sfnsdkjfskjfbs-->",ext1)
-		if ext not in ['.jpg', '.jpeg', '.png']:
-			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
-		return value
-
 
 # class update_serializer(serializers.Serializer):
 # 	company_id = serializers.PrimaryKeyRelatedField(queryset = company.objects.all(), required = True)
@@ -126,7 +123,7 @@ class create_serializer(serializers.Serializer):
 
 class update_serializer(serializers.ModelSerializer):
 
-	profile_picture_path = serializers.FileField(required=False, allow_null=True)
+	profile_picture_path = serializers.FileField(validators = [validate_image_extension],required=False, allow_null=True)
 	class Meta:
 		model = employee
 		exclude = ['password'] 
@@ -156,21 +153,13 @@ class update_serializer(serializers.ModelSerializer):
 	# 		raise serializers.ValidationError({"error":"Gender must be 0 or 1"})
 
 	# 	return data
-
-
+	
 	def validate_roles(self, value):
 		# Ensure there are no duplicates in the provided role IDs
 		roles_set = {role for role in value}
 		if len(roles_set) != len(value):
 			raise serializers.ValidationError("Duplicate role IDs are not allowed.")
 		return value
-	
-	def validate_profile_picture_path(self, value):
-		ext = os.path.splitext(value.name)[1].lower()
-		if ext not in ['.jpg', '.jpeg', '.png']:
-			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
-		return value
-
 class create_salary_info_serializer(serializers.ModelSerializer):
 
 	class Meta:
