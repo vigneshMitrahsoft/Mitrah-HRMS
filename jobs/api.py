@@ -46,7 +46,8 @@ def resume_filteration(request, format=None):
 	# tempr_path = "D:/downloads/Naveen_Python_Developer _ 3 yr.pdf"
 	# tempr_path = "D:/downloads/Resumes/Hariharan_M_Resume (1).pdf"  #
 	# tempr_path = "D:/downloads/Resumes/Kesava Moorthy-2.pdf"
-	tempr_path = "D:/downloads/Resumes/Naukri_AvinashA[3y_0m].pdf"
+	# tempr_path = "D:/downloads/Resumes/Naukri_AvinashA[3y_0m].pdf"
+	tempr_path = '/app/imap_resumes/resume2.pdf'
 	try:
 		resume_text = extract_text_from_file(tempr_path)
 		parsed_info = get_candidate_info(resume_text)

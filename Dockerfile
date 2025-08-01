@@ -25,7 +25,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Start using Gunicorn
-CMD ["gunicorn", "main.wsgi:application", "--bind", "0.0.0.0:8000"]
-
-
-
+# CMD ["gunicorn", "main.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

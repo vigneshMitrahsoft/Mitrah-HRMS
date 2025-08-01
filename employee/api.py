@@ -77,13 +77,14 @@ def get_employees(request):
 	return Response({"statuscode":status.HTTP_200_OK,"status":"success","data":serialized_data.data},status=status.HTTP_200_OK)
 
 @api_view(('POST',))
-@permission_classes((IsAuthenticated,))
-@IsAuthorized(['hr'])
-@parser_classes([MultiPartParser, FormParser])
+# @permission_classes((IsAuthenticated,))
+# @IsAuthorized(['hr'])
+# @parser_classes([MultiPartParser, FormParser])
 @transaction.atomic
 def create_employee(request):
+	print("this blocke executed------------>")
 	data = request.data
-	token_user_id = request.user.employee_id
+	# token_user_id = request.user.employee_id
 
 	serializer = create_serializer(data = data)
 	if not serializer.is_valid():
@@ -99,7 +100,7 @@ def create_employee(request):
 	if 'profile_picture_path' in request.FILES:
 		data.pop('profile_picture_path')
 	try:
-		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
+		create_employee = employee.objects.create(**data,created_by = 1, updated_by = 1)
 
 		employee_role_objs = [
 			employee_roles(
@@ -147,7 +148,7 @@ def create_employee(request):
 		serializer = create_leavebalance_serializer(data=leave_balance_data)
 		if serializer.is_valid():
 			data = serializer.validated_data
-			employee_leave_balances.objects.create(**data, created_by = token_user_id, updated_by = token_user_id)
+			employee_leave_balances.objects.create(**data, created_by = 1, updated_by = 1)
 		else:
 			raise  ValueError(serializer.errors)
 

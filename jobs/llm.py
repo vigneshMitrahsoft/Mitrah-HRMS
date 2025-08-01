@@ -10,7 +10,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from imap_tools import MailBox, AND
 from datetime import datetime
 
-llm = ChatOllama(model="mistral")
+# llm = ChatOllama(model="mistral")
+llm = ChatOllama(model="mistral",base_url="http://host.docker.internal:11434")
 
 def extract_text_from_file(file_path):
 	print("file_path---->",file_path)
@@ -159,7 +160,7 @@ def convert_dict(payload):
 									# INSERT CANDIDATE INFO INTO EXCEL
 
 def insert_candidate_info(info_data):
-	excel_path = "D:/downloads/resume_data.xlsx"
+	excel_path = '/app/imap_resumes/candidate_personal_info.xlsx'
 
 	candidate_info = info_data.get("candidate_info", {})
 	match_result = info_data.get("match_result", {})
@@ -187,7 +188,9 @@ def insert_candidate_info(info_data):
 									# IMPORT RESUMES FROM IMAP
 def import_resumes(email,password, start_date, end_date):
 	print("Start the process -------->")
-	SAVE_DIR = 'D:/imap_resumes'
+	# SAVE_DIR = 'D:/imap_resumes'
+	SAVE_DIR = '/app/imap_resumes'
+	print("the die---->",SAVE_DIR)
 	with MailBox('imap.gmail.com').login(email, password, initial_folder='INBOX') as mailbox:
 		messages = mailbox.fetch(AND(date_gte=start_date))
 
