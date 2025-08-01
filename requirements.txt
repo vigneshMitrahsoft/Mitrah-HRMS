@@ -7,3 +7,10 @@ pandas
 openpyxl
 django-cors-headers
 pillow
+gunicorn
+langchain
+langchain-community
+langchain-ollama
+pdfminer.six 
+python-docx
+imap-tools

@@ -37,6 +37,7 @@ app = ([
 	path("dashboard/", include('dashboard.urls')),
     path("register/", include('subscription.urls')),
     path("taxdeduction/", include('taxdeduction.urls')),
+    path('jobs/',include('jobs.urls'))
 	])
 
 urlpatterns = [
