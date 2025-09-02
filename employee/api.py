@@ -88,7 +88,6 @@ def create_employee(request):
 	serializer = create_serializer(data = data)
 	if not serializer.is_valid():
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 	data = serializer.validated_data
 	image = data.get('profile_picture_path')
 	plain_password = data.get('password')
@@ -96,7 +95,7 @@ def create_employee(request):
 		hashed_password = make_password(plain_password)   
 		data['password'] = hashed_password
 	roles_data = data.pop('roles')
-	if 'profile_picture_path' in request.FILES:
+	if 'profile_picture_path' in data:
 		data.pop('profile_picture_path')
 	try:
 		create_employee = employee.objects.create(**data,created_by = token_user_id, updated_by = token_user_id)
@@ -163,7 +162,7 @@ def create_employee(request):
 		transaction.set_rollback(True)
 		return Response({
 			"status": "error",
-			"message": str(e)
+			"message": str(e),
 		}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(('PATCH',))
@@ -171,6 +170,7 @@ def create_employee(request):
 @IsAuthorized(['hr'])
 @parser_classes([MultiPartParser, FormParser])
 def update_employee(request, id):
+	data = request.data
 	try:
 		employee_data = employee.objects.get(employee_id = id)
 	except employee.DoesNotExist:
@@ -203,31 +203,33 @@ def update_employee(request, id):
 
 		roles_to_deactivate = current_roles - updated_roles
 		roles_to_activate_or_create = updated_roles - current_roles
+		if 'roles' in data and current_roles != updated_roles:
+			if roles_to_deactivate:
+				employee_roles.objects.filter(employee_id = id, role_id__in = roles_to_deactivate).update(is_active = False)
 
-		if roles_to_deactivate:
-			employee_roles.objects.filter(employee_id = id, role_id__in = roles_to_deactivate).update(is_active = False)
+			for role_id in roles_to_activate_or_create:
+				try:
+					emp_role = employee_roles.objects.get(employee_id = id, role_id = role_id)
+					emp_role.is_active = True
+					emp_role.updated_by = token_user_id
+					emp_role.save()
+				except employee_roles.DoesNotExist:
+					if roles.objects.filter(role_id=role_id).exists():
+						employee_roles.objects.create(
+							employee_id = employee_data.employee_id,
+							role_id = role_id,
+							is_active = True,
+							created_by = token_user_id,
+							updated_by = token_user_id
+						)
 
-		for role_id in roles_to_activate_or_create:
-			try:
-				emp_role = employee_roles.objects.get(employee_id = id, role_id = role_id)
-				emp_role.is_active = True
-				emp_role.updated_by = token_user_id
-				emp_role.save()
-			except employee_roles.DoesNotExist:
-				if roles.objects.filter(role_id=role_id).exists():
-					employee_roles.objects.create(
-						employee_id = employee_data.employee_id,
-						role_id = role_id,
-						is_active = True,
-						created_by = token_user_id,
-						updated_by = token_user_id
-					)
-		if image:
+		if 'profile_picture_path' in request.FILES:
+			image = request.FILES['profile_picture_path']
 			directory = os.path.join("assets", "profile_picture")
 			previous_file_name = employee_data.profile_picture_path if employee_data.profile_picture_path else None
 			if previous_file_name:
 				old_file = os.path.join(directory, f"{previous_file_name}")
-				if os.path.isfile(old_file):
+				if os.path.exists(old_file):
 					os.remove(old_file)
 			employee_data.profile_picture_path = image
 			employee_data.save()

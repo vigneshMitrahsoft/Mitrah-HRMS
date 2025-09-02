@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import company
+from .models import company, company_Settings
 import os
 
 class companySerializer(serializers.ModelSerializer):
@@ -90,3 +90,10 @@ class companyUpdateSerializer(serializers.Serializer):
 		if ext not in ['.jpg', '.jpeg', '.png']:
 			raise serializers.ValidationError("Only JPEG and PNG file extensions are allowed.")
 		return value
+
+
+class company_settings_serializer(serializers.ModelSerializer):
+
+	class Meta:
+		model = company_Settings
+		fields = '__all__'
